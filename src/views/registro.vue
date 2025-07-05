@@ -8,6 +8,7 @@
           </div>
 
           <div class="form-container">
+          <br>
             <h2 class="title">Registro</h2>
 
             <label class="label" for="email">Correo electrónico</label>
