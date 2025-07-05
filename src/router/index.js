@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHashHistory } from 'vue-router'
 import Inicio from '../views/inicio.vue'
 import Carrito from '../views/carrito.vue'
 import Cotizar from '../views/cotizar.vue'
@@ -42,7 +42,7 @@ const routes = [
 ]
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHashHistory(), // 👈 este es el cambio clave
   routes,
 })
 
