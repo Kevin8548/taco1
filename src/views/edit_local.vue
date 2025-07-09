@@ -1,104 +1,157 @@
 <template>
-  <div class="parent">
-    <div class="div1">
-      <h1>Editar Local</h1>
-    </div>
+  <div class="contenedor">
+    <h1>Editar Local</h1>
 
-    <div class="div2">
-      <label class="texto">Nombre del Local:</label>
-      <input type="text" v-model="nombre" placeholder="Ej. Tacos Don Memo" />
-
-      <label class="texto">Ubicación:</label>
-      <input type="text" v-model="ubicacion" placeholder="Ej. Calle 5, Col. Centro" />
-
-      <label class="texto">Descripción:</label>
-      <input
-        type="text"
-        v-model="descripcion"
-        placeholder="Breve descripción del local..."
-      />
-
-      <label class="texto">Imagen:</label>
-      <input type="file" @change="onFileChange" accept="image/*" />
-    </div>
-
-    <div class="div3">
-      <div style="display: flex; flex-direction: column; align-items: center">
-        <div class="preview-box" v-if="previewUrl">
-          <img :src="previewUrl" alt="Vista previa" class="preview-img" />
-        </div>
-        <br />
-        <button @click="() => showConfirmDialog('editar')" class="editar">Editar</button>
-        <br />
-        <button @click="() => showConfirmDialog('eliminar')" class="eliminar">
-          Eliminar
-        </button>
+    <div class="grupo">
+      <div class="campo">
+        <label>Nombre del Local</label>
+        <input type="text" v-model="nombre" placeholder="Ej. Tacos Don Memo" />
       </div>
+      <div class="campo campo-grande">
+        <label>Descripción</label>
+        <input type="text" v-model="descripcion" placeholder="Breve descripción del local..." />
+      </div>
+    </div>
+
+    <h3>Dirección</h3>
+    <div class="grupo">
+      <div class="campo">
+        <label>Calle</label>
+        <input type="text" v-model="calle" placeholder="Ej. Av. Reforma" />
+      </div>
+      <div class="campo">
+        <label>Ciudad</label>
+        <input type="text" v-model="ciudad" placeholder="Ej. Ciudad de México" />
+      </div>
+    </div>
+
+    <div class="grupo">
+      <div class="campo">
+        <label>Código Postal</label>
+        <input type="text" v-model="codigoPostal" placeholder="Ej. 06000" />
+      </div>
+      <div class="campo">
+        <label>Estado / Provincia / Zona</label>
+        <input type="text" v-model="estado" placeholder="Ej. CDMX" />
+      </div>
+    </div>
+
+    <div class="campo">
+      <label>Entre calles</label>
+      <input type="text" v-model="entreCalles" placeholder="Ej. Juárez y Madero" />
+    </div>
+
+    <div class="campo">
+      <label>Colonia</label>
+      <input type="text" v-model="colonia" placeholder="Ej. Centro" />
+    </div>
+
+    <div class="imagenes">
+      <div class="imagen-preview">
+        <label>Imagen de Ubicación</label>
+        <input type="file" accept="image/*" @change="onUbicacionChange" />
+        <div class="preview" v-if="ubicacionPreviewUrl">
+          <img :src="ubicacionPreviewUrl" alt="Vista previa ubicación" />
+        </div>
+      </div>
+
+      <div class="imagen-preview">
+        <label>Imagen del Local</label>
+        <input type="file" accept="image/*" @change="onLocalChange" />
+        <div class="preview" v-if="localPreviewUrl">
+          <img :src="localPreviewUrl" alt="Vista previa local" />
+        </div>
+      </div>
+    </div>
+
+    <div class="acciones">
+      <button class="editar" @click="() => showConfirmDialog('editar')">Editar</button>
+      <button class="eliminar" @click="() => showConfirmDialog('eliminar')">Eliminar</button>
     </div>
   </div>
 </template>
 
-<script>
-export default {
-  name: "EditarLocal",
-  data() {
-    return {
-      nombre: "",
-      ubicacion: "",
-      descripcion: "",
-      previewUrl: null,
-      objectUrl: null,
-    };
-  },
-  mounted() {
-    const id = this.$route.query.id;
-    if (id) {
-      // Aquí deberías cargar datos desde API o array local
-      // Simulación:
-      this.nombre = "Taco Real Tlaxcala";
-      this.ubicacion = "Av. Reforma #123";
-      this.descripcion = "Un local tradicional con tacos de papa y más";
-      this.previewUrl = "https://via.placeholder.com/200x200?text=Local";
-    }
-  },
-  methods: {
-    onFileChange(event) {
-      const file = event.target.files[0];
-      if (file && file.type.startsWith("image/")) {
-        if (this.objectUrl) URL.revokeObjectURL(this.objectUrl);
-        this.objectUrl = URL.createObjectURL(file);
-        this.previewUrl = this.objectUrl;
-      } else {
-        this.previewUrl = null;
-        alert("Por favor selecciona una imagen válida.");
-      }
-    },
-  },
-  beforeUnmount() {
-    if (this.objectUrl) URL.revokeObjectURL(this.objectUrl);
-  },
-};
-</script>
-
 <script setup>
+import { ref, onBeforeUnmount, onMounted } from "vue";
 import Swal from "sweetalert2";
+import { useRoute } from "vue-router";
 
-const showConfirmDialog = (action) => {
-  let title, text, confirmButtonText, successTitle, successText;
+const nombre = ref("");
+const descripcion = ref("");
+const calle = ref("");
+const ciudad = ref("");
+const codigoPostal = ref("");
+const estado = ref("");
+const entreCalles = ref("");
+const colonia = ref("");
+const ubicacionFile = ref(null);
+const localFile = ref(null);
+const ubicacionPreviewUrl = ref(null);
+const localPreviewUrl = ref(null);
 
-  if (action === "editar") {
-    title = "¿Seguro que quieres editar?";
-    text = "Estás a punto de modificar los datos del local.";
-    confirmButtonText = "Sí, editar";
-    successTitle = "¡Editado!";
-    successText = "El local ha sido actualizado.";
-  } else {
-    title = "¿Seguro que quieres eliminar?";
-    text = "Esta acción no se puede deshacer.";
-    confirmButtonText = "Sí, eliminar";
-    successTitle = "¡Eliminado!";
-    successText = "El local ha sido eliminado.";
+const route = useRoute();
+
+onMounted(() => {
+  const id = route.query.id;
+  if (id) {
+    nombre.value = "Taco Real Tlaxcala";
+    descripcion.value = "Un local tradicional con tacos de papa y más";
+    calle.value = "Av. Reforma";
+    ciudad.value = "Tlaxcala";
+    codigoPostal.value = "90000";
+    estado.value = "Tlaxcala";
+    entreCalles.value = "Juárez y Allende";
+    colonia.value = "Centro";
+    ubicacionPreviewUrl.value = "https://via.placeholder.com/200x200?text=Ubicación";
+    localPreviewUrl.value = "https://via.placeholder.com/200x200?text=Local";
   }
+});
+
+function onUbicacionChange(event) {
+  const file = event.target.files[0];
+  if (file && file.type.startsWith("image/")) {
+    if (ubicacionPreviewUrl.value) URL.revokeObjectURL(ubicacionPreviewUrl.value);
+    ubicacionFile.value = file;
+    ubicacionPreviewUrl.value = URL.createObjectURL(file);
+  } else {
+    ubicacionPreviewUrl.value = null;
+    ubicacionFile.value = null;
+    alert("Por favor selecciona una imagen válida para la ubicación.");
+  }
+}
+
+function onLocalChange(event) {
+  const file = event.target.files[0];
+  if (file && file.type.startsWith("image/")) {
+    if (localPreviewUrl.value) URL.revokeObjectURL(localPreviewUrl.value);
+    localFile.value = file;
+    localPreviewUrl.value = URL.createObjectURL(file);
+  } else {
+    localPreviewUrl.value = null;
+    localFile.value = null;
+    alert("Por favor selecciona una imagen válida para el local.");
+  }
+}
+
+function showConfirmDialog(accion) {
+  const opciones = {
+    editar: {
+      title: "¿Seguro que quieres editar?",
+      text: "Estás a punto de modificar los datos.",
+      confirmButtonText: "Sí, editar",
+      successTitle: "¡Editado!",
+      successText: "El local fue actualizado.",
+    },
+    eliminar: {
+      title: "¿Seguro que quieres eliminar?",
+      text: "Esta acción no se puede deshacer.",
+      confirmButtonText: "Sí, eliminar",
+      successTitle: "¡Eliminado!",
+      successText: "El local fue eliminado.",
+    },
+  };
+
+  const { title, text, confirmButtonText, successTitle, successText } = opciones[accion];
 
   Swal.fire({
     title,
@@ -117,135 +170,162 @@ const showConfirmDialog = (action) => {
       });
     }
   });
-};
+}
+
+onBeforeUnmount(() => {
+  if (ubicacionPreviewUrl.value) URL.revokeObjectURL(ubicacionPreviewUrl.value);
+  if (localPreviewUrl.value) URL.revokeObjectURL(localPreviewUrl.value);
+});
 </script>
 
 <style scoped>
-.eliminar {
-  padding: 12px;
-  background-color: #d33;
-  color: white;
-  border: none;
-  cursor: pointer;
-  border-radius: 6px;
-}
-
-.editar {
-  padding: 12px;
-  background-color: rgb(255, 255, 0);
-  color: black;
-  border: none;
-  cursor: pointer;
-  border-radius: 6px;
-}
-
-.texto {
+.contenedor {
+  max-width: 950px;
+  margin: 20px auto;
+  padding: 25px;
+  background: #fff;
+  box-shadow: 0 0 14px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
   font-family: "Roboto", sans-serif;
-  font-size: 20px;
-  margin-left: -80px;
-}
-
-.parent {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  grid-template-rows: repeat(5, 1fr);
-  grid-column-gap: 0px;
-  grid-row-gap: 0px;
-}
-
-.div1 {
-  grid-area: 1 / 1 / 6 / 2;
-}
-
-.div2 {
-  grid-area: 1 / 2 / 6 / 5;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding-top: 40px;
-}
-
-.div3 {
-  grid-area: 1 / 5 / 6 / 6;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 h1 {
-  font-family: "Roboto", sans-serif;
-  text-align: left;
-  padding-top: 250px;
-  padding-left: 30px;
+  text-align: center;
+  margin-bottom: 30px;
+  font-size: 26px;
+  font-weight: 700;
+}
+
+h3 {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 30px 0 10px;
+}
+
+.grupo {
+  display: flex;
+  gap: 30px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.campo {
+  flex: 1;
+  min-width: 400px;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 20px;
+}
+
+.campo-grande {
+  flex: 2;
 }
 
 label {
-  font-family: "Roboto", sans-serif;
-  margin-left: 100px;
+  font-weight: 600;
+  margin-bottom: 8px;
   font-size: 16px;
 }
 
 input[type="text"],
 input[type="file"] {
-  font-family: "Roboto", sans-serif;
-  width: 60%;
-  padding: 10px;
-  margin: 0 0 10px 100px;
-  box-sizing: border-box;
-  border: 1px solid #343434;
-  border-radius: 4px;
+  padding: 14px 18px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background-color: #f9f9f9;
+  width: 100%;
 }
 
-.preview-box {
-  width: 200px;
-  height: 200px;
-  border: 2px dashed #aaa;
-  background-color: #eee;
+.imagenes {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  overflow: hidden;
+  gap: 30px;
+  margin-top: 30px;
+  flex-wrap: wrap;
 }
 
-.preview-img {
+.imagen-preview {
+  flex: 1;
+  min-width: 280px;
+}
+
+.preview {
+  margin-top: 10px;
+  border: 2px dashed #ccc;
+  background-color: #f5f5f5;
+  padding: 10px;
+  border-radius: 10px;
+  text-align: center;
+  height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview img {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
-  border: 1px solid #333;
-  background-color: white;
+  border-radius: 6px;
+}
+
+.acciones {
+  margin-top: 40px;
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+
+.editar,
+.eliminar {
+  padding: 14px 28px;
+  border: none;
+  border-radius: 10px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.editar {
+  background-color: #ffe600;
+  color: black;
+}
+
+.editar:hover {
+  background-color: #e6d100;
+}
+
+.eliminar {
+  background-color: #d33;
+  color: white;
+}
+
+.eliminar:hover {
+  background-color: #b30000;
 }
 
 @media (max-width: 768px) {
-  .parent {
-    display: flex;
+  .grupo {
     flex-direction: column;
-    padding: 20px;
   }
 
-  .div1,
-  .div2,
-  .div3 {
-    grid-area: auto;
-    padding: 0;
-    margin-bottom: 30px;
+  .campo {
+    min-width: 100%;
   }
 
-  label,
-  input[type="text"],
-  input[type="file"] {
-    margin-left: 0;
-    width: 100%;
+  .imagenes {
+    flex-direction: column;
   }
 
-  h1 {
-    text-align: center;
-    padding: 20px 0;
-  }
-
-  .preview-box {
-    width: 100%;
+  .preview {
     height: auto;
     aspect-ratio: 1 / 1;
+  }
+
+  .acciones {
+    flex-direction: column;
+    align-items: center;
   }
 }
 </style>

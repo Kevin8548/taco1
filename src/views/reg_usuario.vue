@@ -1,57 +1,75 @@
 <template>
-  <div class="parent">
-    <!-- Título -->
-    <div class="div1">
-      <h1>Registrar Usuario</h1>
-    </div>
+  <div class="contenedor">
+    <h1>Registrar Usuario</h1>
 
-    <!-- Formulario -->
-    <div class="div2">
-      <label class="texto">Nombre:</label>
-      <input v-model="form.nombre" type="text" />
-
-      <label class="texto">Apellidos:</label>
-      <input v-model="form.apellidos" type="text" />
-
-      <label class="texto">Contacto:</label>
-      <input v-model="form.contacto" type="text" />
-
-      <label class="texto">Tipo de usuario:</label>
-      <select v-model="form.tipoUsuario">
-        <option value="Administrador">Administrador</option>
-        <option value="Empleado">Empleado</option>
-        <option value="Cliente">Cliente</option>
-      </select>
-
-      <h3>Dirección:</h3>
-
-      <label class="texto">Calle:</label>
-      <input v-model="form.direccion.calle" type="text" />
-
-      <label class="texto">Ciudad:</label>
-      <input v-model="form.direccion.ciudad" type="text" />
-
-      <label class="texto">Código postal:</label>
-      <input v-model="form.direccion.codigoPostal" type="text" />
-
-      <label class="texto">Estado/provincia/zona:</label>
-      <input v-model="form.direccion.estado" type="text" />
-
-      <label class="texto">Entre calles:</label>
-      <input v-model="form.direccion.entreCalles" type="text" />
-    </div>
-
-    <!-- Imagen y botón -->
-    <div class="div3">
-      <div class="imagen-container">
-        <label class="texto">Imagen de perfil:</label>
-        <input type="file" accept="image/*" @change="onUsuarioImageChange" />
-        <div v-if="usuarioPreviewUrl" class="preview-box">
-          <img :src="usuarioPreviewUrl" alt="Vista previa" class="preview-img" />
-        </div>
+    <!-- Datos básicos -->
+    <div class="grupo">
+      <div class="campo">
+        <label>Nombre</label>
+        <input v-model="form.nombre" type="text" placeholder="Ej. Juan" />
       </div>
+      <div class="campo">
+        <label>Apellidos</label>
+        <input v-model="form.apellidos" type="text" placeholder="Ej. Pérez García" />
+      </div>
+    </div>
 
-      <button type="button" class="registrar" @click="confirmarRegistro">Registrar</button>
+    <div class="grupo">
+      <div class="campo">
+        <label>Contacto</label>
+        <input v-model="form.contacto" type="text" placeholder="Ej. 555-123-4567 / correo@example.com" />
+      </div>
+      <div class="campo">
+        <label>Tipo de usuario</label>
+        <select v-model="form.tipoUsuario">
+          <option value="Administrador">Administrador</option>
+          <option value="Empleado">Empleado</option>
+          <option value="Cliente">Cliente</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Dirección -->
+    <h3>Dirección</h3>
+    <div class="grupo">
+      <div class="campo">
+        <label>Calle</label>
+        <input v-model="form.direccion.calle" type="text" placeholder="Ej. Av. Reforma" />
+      </div>
+      <div class="campo">
+        <label>Ciudad</label>
+        <input v-model="form.direccion.ciudad" type="text" placeholder="Ej. Ciudad de México" />
+      </div>
+    </div>
+
+    <div class="grupo">
+      <div class="campo">
+        <label>Código postal</label>
+        <input v-model="form.direccion.codigoPostal" type="text" placeholder="Ej. 06000" />
+      </div>
+      <div class="campo">
+        <label>Estado / Provincia / Zona</label>
+        <input v-model="form.direccion.estado" type="text" placeholder="Ej. CDMX" />
+      </div>
+    </div>
+
+    <div class="campo">
+      <label>Entre calles</label>
+      <input v-model="form.direccion.entreCalles" type="text" placeholder="Ej. Juárez y Madero" />
+    </div>
+
+    <!-- Imagen de perfil -->
+    <div class="imagen-preview">
+      <label>Imagen de perfil</label>
+      <input type="file" accept="image/*" @change="onUsuarioImageChange" />
+      <div v-if="usuarioPreviewUrl" class="preview">
+        <img :src="usuarioPreviewUrl" alt="Vista previa de perfil" />
+      </div>
+    </div>
+
+    <!-- Botón -->
+    <div class="acciones">
+      <button class="registrar" @click="confirmarRegistro">Registrar</button>
     </div>
   </div>
 </template>
@@ -96,25 +114,18 @@ export default {
     confirmarRegistro() {
       Swal.fire({
         title: "¿Desea registrar este Usuario?",
-        text: "...",
+        text: "Se guardará el nuevo usuario en el sistema.",
         icon: "warning",
         showCancelButton: true,
         confirmButtonColor: "#FFF07F",
         cancelButtonColor: "#d33",
         confirmButtonText: "¡Sí, registrar Usuario!",
         cancelButtonText: "Cancelar",
-        customClass: {
-          popup: "swal2-popup-black",
-          title: "swal2-title-black",
-          content: "swal2-content-black",
-          confirmButton: "swal2-confirm-custom",
-          cancelButton: "swal2-cancel-custom",
-        },
       }).then((result) => {
         if (result.isConfirmed) {
           Swal.fire({
             title: "¡Registrado con éxito!",
-            text: "Usuario registrado con éxito",
+            text: "Usuario registrado exitosamente.",
             icon: "success",
           });
         }
@@ -128,51 +139,59 @@ export default {
 </script>
 
 <style scoped>
-/* Estilo general igual al otro componente */
-.parent {
-  display: grid;
-  grid-template-columns: 1fr 2fr 1fr;
-  gap: 40px;
-  padding: 40px;
+.contenedor {
+  max-width: 950px;
+  margin: 30px auto;
+  padding: 30px;
+  background: #fff;
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
   font-family: "Roboto", sans-serif;
-  color: #333;
-}
-
-/* Div1 - Título */
-.div1 {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
 }
 
 h1 {
+  text-align: center;
+  font-size: 26px;
   font-weight: 700;
-  font-size: 2.5rem;
-  margin: 0;
+  margin-bottom: 30px;
 }
 
-/* Div2 - Formulario */
-.div2 {
+h3 {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 30px 0 10px;
+}
+
+.grupo {
+  display: flex;
+  gap: 30px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.campo {
+  flex: 1;
+  min-width: 400px;
   display: flex;
   flex-direction: column;
-  gap: 0px;
+  margin-bottom: 20px;
 }
 
-.texto {
+label {
   font-weight: 600;
-  font-size: 1.1rem;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
+  font-size: 16px;
 }
 
 input[type="text"],
 select,
 input[type="file"] {
-  padding: 12px 14px;
-  font-size: 1rem;
+  padding: 14px 18px;
+  font-size: 16px;
+  border: 1.6px solid #aaa;
   border-radius: 8px;
-  border: 1.8px solid #aaa;
+  background-color: #f9f9f9;
   width: 100%;
-  box-sizing: border-box;
   transition: border-color 0.3s ease;
 }
 
@@ -183,63 +202,39 @@ input[type="file"]:focus {
   outline: none;
 }
 
-h3 {
-  margin-top: 20px;
-  font-size: 1.3rem;
-  font-weight: 600;
+.imagen-preview {
+  margin-top: 30px;
 }
 
-/* Div3 - Imagen y botón */
-.div3 {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
+.preview {
+  margin-top: 10px;
+  text-align: center;
 }
 
-/* Contenedor imagen para alinear selector y preview */
-.imagen-container {
-  display: flex;
-  flex-direction: column;
-  width: 220px;
-  gap: 10px;
-}
-
-.preview-box {
-  width: 200px;
-  height: 200px;
-  border: 2px dashed #aaa;
-  background-color: #f7f7f7;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: inset 0 0 5px #ddd;
-}
-
-.preview-img {
-  max-width: 100%;
-  max-height: 100%;
+.preview img {
+  max-width: 240px;
+  height: auto;
   object-fit: contain;
-  border-radius: 8px;
-  background-color: white;
+  border-radius: 6px;
+  background: white;
+  box-shadow: 0 0 5px #ccc;
 }
 
-/* Botón registrar estilo igual */
+.acciones {
+  margin-top: 40px;
+  text-align: center;
+}
+
 .registrar {
-  margin-top: 0;
-  padding: 14px 0;
-  width: 220px;
-  font-weight: 700;
+  padding: 14px 28px;
   font-size: 1.1rem;
+  font-weight: bold;
   border: none;
   border-radius: 10px;
   background-color: #4caf50;
   color: white;
   cursor: pointer;
   transition: background-color 0.3s ease;
-  user-select: none;
   box-shadow: 0 0 8px #4caf50aa;
 }
 
@@ -248,37 +243,22 @@ h3 {
   box-shadow: 0 0 12px #388e3ccc;
 }
 
-/* Responsive */
-@media (max-width: 900px) {
-  .parent {
-    grid-template-columns: 1fr;
-    padding: 25px 20px;
-    gap: 30px;
+@media (max-width: 768px) {
+  .grupo {
+    flex-direction: column;
   }
 
-  .div1 {
-    justify-content: center;
+  .campo {
+    min-width: 100%;
   }
 
-  h1 {
-    font-size: 2rem;
+  .imagen-preview {
     text-align: center;
   }
 
-  .div2 {
-    align-items: center;
-  }
-
-  .imagen-container {
-    width: 100%;
-    max-width: 300px;
-    align-items: center;
-  }
-
-  .preview-box {
-    width: 100%;
-    height: auto;
-    aspect-ratio: 1 / 1;
+  .preview img {
+    max-width: 100%;
+    aspect-ratio: 1/1;
   }
 
   .registrar {

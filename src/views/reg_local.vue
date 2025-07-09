@@ -1,81 +1,71 @@
 <template>
-  <div class="parent">
-    <!-- Título -->
-    <div class="div1">
-      <h1>Registrar Local</h1>
-    </div>
+  <div class="contenedor">
+    <h1>Registrar Local</h1>
 
-    <!-- Formulario con labels e inputs -->
-    <div class="div2">
-      <label class="texto" for="nombre">Nombre del Local:</label>
-      <input id="nombre" type="text" v-model="nombre" placeholder="Ej. Tacos Don Memo" />
-
-      <label class="texto" for="descripcion">Descripción:</label>
-      <input
-        id="descripcion"
-        type="text"
-        v-model="descripcion"
-        placeholder="Breve descripción del local..."
-      />
-
-      <!-- Dirección -->
-      <h3>Dirección:</h3>
-
-      <label class="texto" for="calle">Calle:</label>
-      <input id="calle" type="text" v-model="calle" placeholder="Ej. Av. Reforma" />
-
-      <label class="texto" for="ciudad">Ciudad:</label>
-      <input
-        id="ciudad"
-        type="text"
-        v-model="ciudad"
-        placeholder="Ej. Ciudad de México"
-      />
-
-      <label class="texto" for="codigoPostal">Código Postal:</label>
-      <input
-        id="codigoPostal"
-        type="text"
-        v-model="codigoPostal"
-        placeholder="Ej. 06000"
-      />
-
-      <label class="texto" for="estado">Estado / Provincia / Zona:</label>
-      <input id="estado" type="text" v-model="estado" placeholder="Ej. CDMX" />
-
-      <label class="texto" for="entreCalles">Entre calles:</label>
-      <input
-        id="entreCalles"
-        type="text"
-        v-model="entreCalles"
-        placeholder="Ej. Juárez y Madero"
-      />
-
-      <label class="texto" for="colonia">Colonia:</label>
-      <input id="colonia" type="text" v-model="colonia" placeholder="Ej. Centro" />
-    </div>
-
-    <!-- Imágenes -->
-    <div class="div3">
-      <div class="imagen-group">
-        <label class="texto">Imagen de Ubicación:</label>
-        <input type="file" accept="image/*" @change="onUbicacionChange" />
-        <div class="preview-box" v-if="ubicacionPreviewUrl">
-          <img
-            :src="ubicacionPreviewUrl"
-            alt="Vista previa ubicación"
-            class="preview-img"
-          />
-        </div>
-
-        <label class="texto" style="margin-top: 20px">Imagen del Local:</label>
-        <input type="file" accept="image/*" @change="onLocalChange" />
-        <div class="preview-box" v-if="localPreviewUrl">
-          <img :src="localPreviewUrl" alt="Vista previa local" class="preview-img" />
-        </div>
-
-        <button @click="showConfirmDialog" class="registrar">Registrar</button>
+    <div class="grupo">
+      <div class="campo">
+        <label>Nombre del Local</label>
+        <input type="text" v-model="nombre" placeholder="Ej. Tacos Don Memo" />
       </div>
+      <div class="campo campo-grande">
+        <label>Descripción</label>
+        <input type="text" v-model="descripcion" placeholder="Breve descripción del local..." />
+      </div>
+    </div>
+
+    <h3>Dirección</h3>
+    <div class="grupo">
+      <div class="campo">
+        <label>Calle</label>
+        <input type="text" v-model="calle" placeholder="Ej. Av. Reforma" />
+      </div>
+      <div class="campo">
+        <label>Ciudad</label>
+        <input type="text" v-model="ciudad" placeholder="Ej. Ciudad de México" />
+      </div>
+    </div>
+
+    <div class="grupo">
+      <div class="campo">
+        <label>Código Postal</label>
+        <input type="text" v-model="codigoPostal" placeholder="Ej. 06000" />
+      </div>
+      <div class="campo">
+        <label>Estado / Provincia / Zona</label>
+        <input type="text" v-model="estado" placeholder="Ej. CDMX" />
+      </div>
+    </div>
+
+    <div class="campo">
+      <label>Entre calles</label>
+      <input type="text" v-model="entreCalles" placeholder="Ej. Juárez y Madero" />
+    </div>
+
+    <div class="campo">
+      <label>Colonia</label>
+      <input type="text" v-model="colonia" placeholder="Ej. Centro" />
+    </div>
+
+    <div class="imagenes">
+      <div class="imagen-preview">
+        <label>Imagen de Ubicación</label>
+        <input type="file" accept="image/*" @change="onUbicacionChange" />
+        <div class="preview" v-if="ubicacionPreviewUrl">
+          <img :src="ubicacionPreviewUrl" alt="Vista previa ubicación" />
+        </div>
+      </div>
+
+      <div class="imagen-preview">
+        <label>Imagen del Local</label>
+        <input type="file" accept="image/*" @change="onLocalChange" />
+        <div class="preview" v-if="localPreviewUrl">
+          <img :src="localPreviewUrl" alt="Vista previa local" />
+        </div>
+      </div>
+    </div>
+
+    <div class="acciones">
+      <button class="registrar" @click="showConfirmDialog">Registrar</button>
     </div>
   </div>
 </template>
@@ -156,128 +146,112 @@ export default {
 </script>
 
 <style scoped>
-.parent {
-  display: grid;
-  grid-template-columns: 1fr 2fr 1fr;
-  gap: 40px;
-  padding: 40px;
+.contenedor {
+  max-width: 950px;
+  margin: 20px auto;
+  padding: 25px;
+  background: #fff;
+  box-shadow: 0 0 14px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
   font-family: "Roboto", sans-serif;
-  color: #333;
-}
-
-/* Div1 - Título */
-.div1 {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
 }
 
 h1 {
+  text-align: center;
+  margin-bottom: 30px;
+  font-size: 26px;
   font-weight: 700;
-  font-size: 2.5rem;
-  margin: 0;
-}
-
-/* Div2 - Formulario */
-.div2 {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
 }
 
 h3 {
-  margin-top: 20px;
-  font-size: 1.3rem;
+  font-size: 20px;
   font-weight: 600;
+  margin: 30px 0 10px;
 }
 
-.texto {
-  font-weight: 600;
-  font-size: 1.1rem;
-  margin-bottom: 6px;
-}
-
-input[type="text"] {
-  padding: 12px 14px;
-  font-size: 1rem;
-  border-radius: 8px;
-  border: 1.8px solid #aaa;
-  width: 100%;
-  box-sizing: border-box;
-  transition: border-color 0.3s ease;
-}
-
-input[type="text"]:focus {
-  border-color: #9e5700;
-  outline: none;
-}
-
-/* Div3 - Imagenes + botón */
-.div3 {
+.grupo {
   display: flex;
-  align-items: flex-start;
-  justify-content: center;
+  gap: 30px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
 }
 
-.imagen-group {
+.campo {
+  flex: 1;
+  min-width: 400px;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 10px;
-  width: 220px;
+  margin-bottom: 20px;
 }
 
+.campo-grande {
+  flex: 2;
+}
+
+label {
+  font-weight: 600;
+  margin-bottom: 8px;
+  font-size: 16px;
+}
+
+input[type="text"],
 input[type="file"] {
-  width: 100%;
-  cursor: pointer;
-  padding: 6px 8px;
+  padding: 14px 18px;
+  font-size: 16px;
+  border: 1px solid #ccc;
   border-radius: 6px;
-  border: 1.5px solid #aaa;
-  box-sizing: border-box;
-  transition: border-color 0.3s ease;
+  background-color: #f9f9f9;
+  width: 100%;
 }
 
-input[type="file"]:focus {
-  border-color: #9e5700;
-  outline: none;
-}
-
-/* Preview imágenes */
-.preview-box {
-  width: 200px;
-  height: 200px;
-  border: 2px dashed #ccc;
-  background-color: #f7f7f7;
+.imagenes {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: inset 0 0 5px #ddd;
+  gap: 30px;
+  margin-top: 30px;
+  flex-wrap: wrap;
 }
 
-.preview-img {
+.imagen-preview {
+  flex: 1;
+  min-width: 280px;
+}
+
+.preview {
+  margin-top: 10px;
+  border: 2px dashed #ccc;
+  background-color: #f5f5f5;
+  padding: 10px;
+  border-radius: 10px;
+  text-align: center;
+  height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview img {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
-  border-radius: 8px;
-  background-color: white;
+  border-radius: 6px;
 }
 
-/* Botón registrar */
+.acciones {
+  margin-top: 40px;
+  display: flex;
+  justify-content: center;
+}
+
 .registrar {
-  margin-top: 25px;
-  padding: 14px 0;
-  width: 100%;
-  font-weight: 700;
-  font-size: 1.1rem;
+  padding: 14px 28px;
   border: none;
   border-radius: 10px;
   background-color: #4caf50;
   color: white;
+  font-size: 1.1rem;
+  font-weight: bold;
   cursor: pointer;
   transition: background-color 0.3s ease;
-  user-select: none;
   box-shadow: 0 0 8px #4caf50aa;
 }
 
@@ -286,41 +260,22 @@ input[type="file"]:focus {
   box-shadow: 0 0 12px #388e3ccc;
 }
 
-/* Responsive */
-@media (max-width: 900px) {
-  .parent {
-    grid-template-columns: 1fr;
-    padding: 25px 20px;
-    gap: 30px;
+@media (max-width: 768px) {
+  .grupo {
+    flex-direction: column;
   }
 
-  .div1 {
-    justify-content: center;
+  .campo {
+    min-width: 100%;
   }
 
-  h1 {
-    font-size: 2rem;
-    text-align: center;
+  .imagenes {
+    flex-direction: column;
   }
 
-  .div2 {
-    align-items: center;
-  }
-
-  .imagen-group {
-    width: 100%;
-    align-items: center;
-  }
-
-  .preview-box {
-    width: 100%;
-    max-width: 300px;
+  .preview {
     height: auto;
     aspect-ratio: 1 / 1;
-  }
-
-  .registrar {
-    width: 100%;
   }
 }
 </style>

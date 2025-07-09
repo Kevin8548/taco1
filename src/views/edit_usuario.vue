@@ -1,50 +1,66 @@
 <template>
-  <div class="parent">
-    <div class="div1">
-      <h1>Editar Usuario</h1>
-    </div>
+  <div class="contenedor">
+    <h1>Editar Usuario</h1>
 
-    <div class="div2">
-      <label class="texto">Nombre:</label>
-      <input type="text" v-model="sabor" placeholder="Escribe tu nombre..." />
-
-      <label class="texto">Apellidos:</label>
-      <input type="text" v-model="precio" placeholder="Escribe tus apellidos..." />
-
-      <label class="texto">Contacto:</label>
-      <input type="text" v-model="descripcion" placeholder="Escribe tu número o correo..." />
-
-      <h3>Dirección:</h3>
-
-      <label class="texto">Calle:</label>
-      <input v-model="form.direccion.calle" type="text" />
-
-      <label class="texto">Ciudad:</label>
-      <input v-model="form.direccion.ciudad" type="text" />
-
-      <label class="texto">Código postal:</label>
-      <input v-model="form.direccion.codigoPostal" type="text" />
-
-      <label class="texto">Estado/provincia/zona:</label>
-      <input v-model="form.direccion.estado" type="text" />
-
-      <label class="texto">Entre calles:</label>
-      <input v-model="form.direccion.entreCalles" type="text" />
-
-      <label class="texto">Imagen:</label>
-      <input type="file" @change="onFileChange" accept="image/*" />
-    </div>
-
-    <div class="div3">
-      <div style="display: flex; flex-direction: column; align-items: center;">
-        <div class="preview-box" v-if="previewUrl">
-          <img :src="previewUrl" alt="Vista previa" class="preview-img" />
-        </div>
-        <br>
-        <button @click="showConfirmDialog('editar')" class="editar">Editar</button>
-        <br>
-        <button @click="showConfirmDialog('eliminar')" class="eliminar">Eliminar</button>
+    <div class="fila">
+      <div class="campo">
+        <label>Nombre</label>
+        <input type="text" v-model="sabor" placeholder="Escribe tu nombre..." />
       </div>
+      <div class="campo">
+        <label>Apellidos</label>
+        <input type="text" v-model="precio" placeholder="Escribe tus apellidos..." />
+      </div>
+    </div>
+
+    <div class="fila">
+      <div class="campo">
+        <label>Contacto</label>
+        <input type="text" v-model="descripcion" placeholder="Escribe tu número o correo..." />
+      </div>
+      <div class="campo">
+        <label>Imagen</label>
+        <input type="file" @change="onFileChange" accept="image/*" />
+      </div>
+    </div>
+
+    <h3 class="subtitulo">Dirección</h3>
+
+    <div class="fila">
+      <div class="campo">
+        <label>Calle</label>
+        <input type="text" v-model="form.direccion.calle" />
+      </div>
+      <div class="campo">
+        <label>Ciudad</label>
+        <input type="text" v-model="form.direccion.ciudad" />
+      </div>
+    </div>
+
+    <div class="fila">
+      <div class="campo">
+        <label>Código Postal</label>
+        <input type="text" v-model="form.direccion.codigoPostal" />
+      </div>
+      <div class="campo">
+        <label>Estado / Provincia / Zona</label>
+        <input type="text" v-model="form.direccion.estado" />
+      </div>
+    </div>
+
+    <div class="fila">
+      <div class="campo campo-grande">
+        <label>Entre calles</label>
+        <input type="text" v-model="form.direccion.entreCalles" />
+      </div>
+      <div class="preview" v-if="previewUrl">
+        <img :src="previewUrl" alt="Vista previa" />
+      </div>
+    </div>
+
+    <div class="botones">
+      <button class="editar" @click="showConfirmDialog('editar')">Editar</button>
+      <button class="eliminar" @click="showConfirmDialog('eliminar')">Eliminar</button>
     </div>
   </div>
 </template>
@@ -53,7 +69,6 @@
 import { onBeforeUnmount, reactive, ref } from 'vue'
 import Swal from 'sweetalert2'
 
-// Datos reactivamente
 const sabor = ref('')
 const precio = ref('')
 const descripcion = ref('')
@@ -70,7 +85,6 @@ const form = reactive({
   }
 })
 
-// Manejo de imagen
 const onFileChange = (event) => {
   const file = event.target.files[0]
   if (file && file.type.startsWith('image/')) {
@@ -83,28 +97,29 @@ const onFileChange = (event) => {
   }
 }
 
-// Limpieza al salir del componente
 onBeforeUnmount(() => {
   if (objectUrl) URL.revokeObjectURL(objectUrl)
 })
 
-// Diálogos de confirmación
 const showConfirmDialog = (action) => {
-  let title, text, confirmButtonText, successTitle, successText
-
-  if (action === 'editar') {
-    title = "¿Seguro que quieres editar?"
-    text = "Estás a punto de modificar el registro."
-    confirmButtonText = "Estoy seguro"
-    successTitle = "¡Editado!"
-    successText = "El registro ha sido editado."
-  } else {
-    title = "¿Seguro que quieres eliminar?"
-    text = "Esta acción no se puede deshacer."
-    confirmButtonText = "Sí, estoy seguro"
-    successTitle = "¡Eliminado!"
-    successText = "El registro ha sido eliminado."
+  const opciones = {
+    editar: {
+      title: "¿Seguro que quieres editar?",
+      text: "Estás a punto de modificar el registro.",
+      confirmButtonText: "Estoy seguro",
+      successTitle: "¡Editado!",
+      successText: "El registro ha sido editado.",
+    },
+    eliminar: {
+      title: "¿Seguro que quieres eliminar?",
+      text: "Esta acción no se puede deshacer.",
+      confirmButtonText: "Sí, estoy seguro",
+      successTitle: "¡Eliminado!",
+      successText: "El registro ha sido eliminado.",
+    }
   }
+
+  const { title, text, confirmButtonText, successTitle, successText } = opciones[action]
 
   Swal.fire({
     title,
@@ -120,140 +135,133 @@ const showConfirmDialog = (action) => {
         title: successTitle,
         text: successText,
         icon: "success"
-      });
+      })
     }
-  });
+  })
 }
 </script>
 
 <style scoped>
-.eliminar {
-  padding: 8px 16px;
-  background-color: #d33;
-  color: white;
-  border: none;
-  cursor: pointer;
-}
-
-.editar {
-  padding: 8px 16px;
-  background-color: rgb(255, 255, 0);
-  color: black;
-  border: none;
-  cursor: pointer;
-}
-
-.texto {
-  font-family: 'Roboto', sans-serif;
-  font-size: 25px;
-  margin-left: -100px;
-}
-
-.parent {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  grid-template-rows: repeat(5, 1fr);
-  grid-column-gap: 0px;
-  grid-row-gap: 0px;
-}
-
-.div1 {
-  grid-area: 1 / 1 / 6 / 2;
-}
-
-.div2 {
-  grid-area: 1 / 2 / 6 / 5;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  padding-top: 40px;
-}
-
-.div3 {
-  grid-area: 1 / 5 / 6 / 6;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.contenedor {
+  max-width: 1000px;
+  margin: 20px auto;
+  padding: 25px;
+  background: #fff;
+  box-shadow: 0 0 14px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  font-family: "Roboto", sans-serif;
 }
 
 h1 {
-  font-family: 'Roboto', sans-serif;
-  text-align: left;
-  padding-top: 250px;
-  padding-left: 30px;
+  text-align: center;
+  margin-bottom: 30px;
+  font-size: 26px;
+}
+
+.subtitulo {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  margin-top: 20px;
+  text-align: center;
+}
+
+.fila {
+  display: flex;
+  gap: 30px;
+  margin-bottom: 25px;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+.campo {
+  flex: 1;
+  min-width: 400px;
+  display: flex;
+  flex-direction: column;
+}
+
+.campo-grande {
+  flex: 2;
 }
 
 label {
-  font-family: 'Roboto', sans-serif;
-  margin-left: 100px;
+  font-weight: 600;
+  margin-bottom: 8px;
   font-size: 16px;
 }
 
 input[type="text"],
 input[type="number"],
 input[type="file"] {
-  font-family: 'Roboto', sans-serif;
-  width: 60%;
-  padding: 10px;
-  margin: 0 0 10px 100px;
-  box-sizing: border-box;
-  border: 1px solid #343434;
-  border-radius: 4px;
+  padding: 14px 18px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background-color: #f9f9f9;
+  width: 100%;
 }
 
-/* Recuadro de imagen */
-.preview-box {
-  width: 200px;
-  height: 200px;
-  border: 2px dashed #aaa;
+.preview {
+  flex: 1;
+  border: 1px dashed #ccc;
   background-color: #eee;
+  padding: 12px;
+  border-radius: 6px;
+  text-align: center;
+  min-width: 240px;
   display: flex;
-  justify-content: center;
   align-items: center;
-  overflow: hidden;
+  justify-content: center;
 }
 
-.preview-img {
-  max-width: 100%;
-  max-height: 100%;
+.preview img {
+  max-width: 240px;
+  height: auto;
   object-fit: contain;
-  border: 1px solid #333;
-  background-color: white;
+  border-radius: 6px;
+  background: #fff;
 }
 
-/* Responsividad */
+.botones {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  margin-top: 30px;
+}
+
+.editar,
+.eliminar {
+  padding: 12px 22px;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.editar {
+  background-color: #ffe600;
+  color: black;
+}
+
+.eliminar {
+  background-color: #d33;
+  color: white;
+}
+
 @media (max-width: 768px) {
-  .parent {
-    display: flex;
+  .fila {
     flex-direction: column;
-    padding: 20px;
   }
 
-  .div1,
-  .div2,
-  .div3 {
-    grid-area: auto;
-    padding: 0;
-    margin-bottom: 30px;
+  .campo {
+    min-width: 100%;
   }
 
-  label,
-  input[type="text"],
-  input[type="number"],
-  input[type="file"] {
-    margin-left: 0;
-    width: 100%;
-  }
-
-  h1 {
-    text-align: center;
-    padding: 20px 0;
-  }
-
-  .preview-box {
-    width: 100%;
-    height: auto;
-    aspect-ratio: 1 / 1;
+  .botones {
+    flex-direction: column;
+    gap: 12px;
   }
 }
 </style>

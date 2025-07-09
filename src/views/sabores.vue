@@ -23,6 +23,7 @@
 
 <script>
 import sabores from "../components/sabores.vue";
+import { useCarritoStore } from '../stores/carrito';
 
 export default {
   components: {
@@ -70,16 +71,12 @@ export default {
     },
   },
   methods: {
-    handleAdd(food) {
-      this.$router.push({ path: "/carrito", query: { producto: JSON.stringify(food) } });
-    },
-    handleEdit(food) {
-      this.$router.push({
-        path: "/editar_taco",
-        query: { producto: JSON.stringify(food) },
-      });
-    },
-  },
+  handleAdd(food) {
+    const carrito = useCarritoStore()
+    carrito.agregarAlCarrito(food)
+    // sin redirección
+  }
+},
 };
 </script>
 

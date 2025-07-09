@@ -1,61 +1,75 @@
 <template>
-  <div>
-    <h1>Datos para el pedido</h1>
-  </div>
-
-  <div class="formulario">
-    <h2>Personales</h2>
-    <br />
-    <label class="texto">Nombre:</label>
-    <input type="text" v-model="nombre" placeholder="Escribe tu nombre..." />
-    <label class="texto">Telefono:</label>
-    <input type="number" v-model="telefono" placeholder="Escribe tu telefono..." />
-    <br />
-    <label class="texto">Correo electronico:</label>
-    <input type="text" v-model="correo" placeholder="Escribe tu correo..." />
-  </div>
-
-  <br />
-
-  <div class="formulario">
-    <h2>Dirección</h2>
-    <br />
-    <label class="texto">Calle:</label>
-    <input type="text" v-model="calle" placeholder="Escribe tu calle..." />
-    <label class="texto">Ciudad:</label>
-    <input type="text" v-model="ciudad" placeholder="Escribe tu ciudad..." />
-    <br />
-    <label class="texto">Codigo postal:</label>
-    <input type="text" v-model="cp" placeholder="Escribe tu cp..." />
-    <label class="texto">Estado/provincia/zona:</label>
-    <input type="text" v-model="estado" placeholder="Escribe tu estado..." />
-    <br />
-    <label class="texto">Entre calles:</label>
-    <input type="text" v-model="calles" placeholder="Escribe las calles..." />
-  </div>
-
-  <br />
-
-  <div class="formulario">
-    <h2>Fecha de entrega</h2>
-    <br />
-    <label class="texto">Fecha:</label>
-    <input type="date" v-model="fecha" />
-    <label class="texto">Hora:</label>
-    <input type="time" v-model="hora" />
-  </div>
-  <br />
-
   <div class="contenedor">
-    <button @click="() => showConfirmDialog('confirmar')" class="confirmar">
-      Confirmar
-    </button>
+    <h1>Datos para el pedido</h1>
+
+    <!-- Datos personales -->
+    <div class="grupo">
+      <div class="campo">
+        <label>Nombre</label>
+        <input type="text" v-model="nombre" placeholder="Escribe tu nombre..." />
+      </div>
+      <div class="campo">
+        <label>Teléfono</label>
+        <input type="number" v-model="telefono" placeholder="Escribe tu teléfono..." />
+      </div>
+    </div>
+
+    <div class="campo campo-grande">
+      <label>Correo electrónico</label>
+      <input type="text" v-model="correo" placeholder="Escribe tu correo..." />
+    </div>
+
+    <!-- Dirección -->
+    <h3>Dirección</h3>
+    <div class="grupo">
+      <div class="campo">
+        <label>Calle</label>
+        <input type="text" v-model="calle" placeholder="Ej. Av. Reforma" />
+      </div>
+      <div class="campo">
+        <label>Ciudad</label>
+        <input type="text" v-model="ciudad" placeholder="Ej. Ciudad de México" />
+      </div>
+    </div>
+
+    <div class="grupo">
+      <div class="campo">
+        <label>Código Postal</label>
+        <input type="text" v-model="cp" placeholder="Ej. 06000" />
+      </div>
+      <div class="campo">
+        <label>Estado / Provincia / Zona</label>
+        <input type="text" v-model="estado" placeholder="Ej. CDMX" />
+      </div>
+    </div>
+
+    <div class="campo campo-grande">
+      <label>Entre calles</label>
+      <input type="text" v-model="calles" placeholder="Ej. Juárez y Madero" />
+    </div>
+
+    <!-- Fecha de entrega -->
+    <h3>Fecha de entrega</h3>
+    <div class="grupo">
+      <div class="campo">
+        <label>Fecha</label>
+        <input type="date" v-model="fecha" />
+      </div>
+      <div class="campo">
+        <label>Hora</label>
+        <input type="time" v-model="hora" />
+      </div>
+    </div>
+
+    <!-- Confirmación -->
+    <div class="acciones">
+      <button class="confirmar" @click="() => showConfirmDialog('confirmar')">Confirmar</button>
+    </div>
   </div>
 </template>
 
 <script setup>
 import Swal from "sweetalert2";
-
 import { useRouter } from "vue-router";
 const router = useRouter();
 
@@ -93,107 +107,107 @@ const showConfirmDialog = (action) => {
 };
 </script>
 
-<style>
+<style scoped>
 .contenedor {
-  text-align: right;
-  padding-bottom: 20px;
-  padding-right: 30px;
-}
-.confirmar {
-  background-color: #26ff00;
-  border: none;
-  padding: 10px 18px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: background-color 0.2s ease;
-  align-items: end;
-}
-
-input[type="date"] {
-  position: relative;
-  z-index: 1;
-}
-
-.formulario {
-  display: inline;
-  flex-direction: column;
-  align-items: flex-start;
-}
-
-input {
-  font-size: 18px;
-  padding: 7px;
-  margin-bottom: 20px;
-  width: 25%;
-}
-
-label {
+  max-width: 950px;
+  margin: 30px auto;
+  padding: 30px;
+  background: #fff;
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
   font-family: "Roboto", sans-serif;
-  font-size: 16px;
-  margin-right: 5px;
 }
 
 h1 {
-  font-family: "roboto", sans-serif;
-  align-items: center;
-  padding-top: 30px;
+  text-align: center;
+  font-size: 26px;
+  font-weight: 700;
+  margin-bottom: 30px;
 }
 
-h2 {
-  font-family: "roboto", sans-serif;
-  text-align: left;
-  padding-left: 60px;
-  padding-top: 15px;
+h3 {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 30px 0 10px;
 }
 
-.texto {
-  font-family: "Roboto", sans-serif;
-  font-size: 25px;
-  text-align: left;
-  margin-left: -140px;
+.grupo {
+  display: flex;
+  gap: 30px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
 }
 
-/* --- RESPONSIVIDAD --- */
+.campo {
+  flex: 1;
+  min-width: 400px;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 20px;
+}
+
+.campo-grande {
+  width: 100%;
+}
+
+label {
+  font-weight: 600;
+  margin-bottom: 8px;
+  font-size: 16px;
+}
+
+input[type="text"],
+input[type="number"],
+input[type="date"],
+input[type="time"] {
+  padding: 14px 18px;
+  font-size: 16px;
+  border: 1.6px solid #aaa;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+  width: 100%;
+  transition: border-color 0.3s ease;
+}
+
+input:focus {
+  border-color: #9e5700;
+  outline: none;
+}
+
+.acciones {
+  margin-top: 40px;
+  text-align: center;
+}
+
+.confirmar {
+  padding: 14px 28px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  border: none;
+  border-radius: 10px;
+  background-color: #26ff00;
+  color: #000;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  box-shadow: 0 0 8px #26ff00aa;
+}
+
+.confirmar:hover {
+  background-color: #20cc00;
+  box-shadow: 0 0 12px #20cc00cc;
+}
+
 @media (max-width: 768px) {
-  input {
-    width: 90%;
+  .grupo {
+    flex-direction: column;
   }
 
-  .texto {
-    font-size: 18px;
-    margin-left: 0;
+  .campo {
+    min-width: 100%;
   }
 
-  .formulario {
-    padding-left: 10px;
-    padding-right: 10px;
-  }
-}
-
-@media (max-width: 480px) {
-  h1 {
-    font-size: 24px;
-    text-align: center;
-  }
-
-  h2 {
-    font-size: 20px;
-    padding-left: 20px;
-  }
-
-  .texto {
-    font-size: 16px;
-  }
-
-  input {
-    font-size: 16px;
-  }
-}
-@media (max-width: 768px) {
-  .texto {
-    margin-left: -20px;
-    font-size: 18px;
+  .confirmar {
+    width: 100%;
   }
 }
 </style>
