@@ -46,8 +46,7 @@ body {
   width: 100%;
   height: 90px;
   padding: 0 30px;
-  background: #D2782AFF;
-  box-shadow: 0px 4px 9px #d2782a1C, 0px 0px 2px #d2782a1F;
+  background: rgba(255, 150, 37, 0.776);
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -63,10 +62,10 @@ body {
   display: flex;
   align-items: center;
   height: 90px;
-  color: #000;
+  color: #000000;
   text-decoration: none;
   font-weight: bold;
-  font-size: 16px;
+  font-size: 20px;
 }
 
 .carrito {

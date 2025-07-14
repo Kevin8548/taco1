@@ -2,6 +2,11 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 
 export default defineConfig({
-  base: '/taco1/', // 👈 nombre exacto del repo de GitHub
-  plugins: [vue()]
+  base: '/taco1/',
+  plugins: [vue()],
+  server: {
+    proxy: {
+      '/api': 'http://localhost:3000'
+    }
+  }
 })

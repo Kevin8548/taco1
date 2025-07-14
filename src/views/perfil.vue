@@ -14,7 +14,7 @@
 
     <!-- Lista de opciones -->
     <div class="perfil-opciones">
-      <div class="opcion" @click="reg_usuario">
+      <div class="opcion" @click="registrarUsuario">
         <i class="icon">➕👤</i>
         <div>
           <p class="titulo">Registrar usuarios</p>
@@ -126,6 +126,9 @@ export default {
     },
     registrarLocal() {
       this.$router.push("/registrar_local");
+    },
+    registrarUsuario() {
+      this.$router.push("/registrar_usuario");
     },
     cerrarSesion() {},
   },

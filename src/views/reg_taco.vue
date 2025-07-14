@@ -62,26 +62,50 @@ export default {
       }
     },
     registrarSabor() {
-      Swal.fire({
-        title: "¿Desea registrar este sabor?",
-        text: "Se guardará el nuevo sabor en el sistema.",
-        icon: "warning",
-        showCancelButton: true,
-        confirmButtonColor: "#FFF07F",
-        cancelButtonColor: "#d33",
-        confirmButtonText: "¡Sí, registrar sabor!",
-        cancelButtonText: "Cancelar",
-      }).then((result) => {
-        if (result.isConfirmed) {
-          Swal.fire({
-            title: "¡Registrado con éxito!",
-            text: "Sabor registrado exitosamente.",
-            icon: "success",
-          });
-          console.log("Datos sabor:", this.form);
-        }
-      });
-    },
+  Swal.fire({
+    title: "¿Desea registrar este sabor?",
+    text: "Se guardará el nuevo sabor en el sistema.",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#FFF07F",
+    cancelButtonColor: "#d33",
+    confirmButtonText: "¡Sí, registrar sabor!",
+    cancelButtonText: "Cancelar",
+  }).then((result) => {
+    if (result.isConfirmed) {
+      // Llama al backend
+      fetch("http://localhost:3000/api/tacos", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          sabor: this.form.sabor,
+          precio: parseFloat(this.form.precio),
+          descripcion: this.form.descripcion,
+        }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) {
+            Swal.fire("¡Registrado con éxito!", "Sabor registrado exitosamente.", "success");
+            this.form.sabor = "";
+            this.form.precio = "";
+            this.form.descripcion = "";
+            this.file = null;
+            this.previewUrl = null;
+          } else {
+            throw new Error("No se pudo registrar.");
+          }
+        })
+        .catch((err) => {
+          console.error(err);
+          Swal.fire("Error", "Hubo un problema al registrar el sabor.", "error");
+        });
+    }
+  });
+}
+
   },
   beforeUnmount() {
     if (this.previewUrl) URL.revokeObjectURL(this.previewUrl);
