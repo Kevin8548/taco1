@@ -3,6 +3,7 @@
     <h1>Editar Local</h1>
 
     <div class="grupo">
+      <!-- Campos idénticos al formulario de registro -->
       <div class="campo">
         <label>Nombre del Local</label>
         <input type="text" v-model="nombre" placeholder="Ej. Tacos Don Memo" />
@@ -65,16 +66,20 @@
     </div>
 
     <div class="acciones">
-      <button class="editar" @click="() => showConfirmDialog('editar')">Editar</button>
-      <button class="eliminar" @click="() => showConfirmDialog('eliminar')">Eliminar</button>
+      <button class="editar" @click="showConfirmDialog('editar')">Editar</button>
+      <button class="eliminar" @click="showConfirmDialog('eliminar')">Eliminar</button>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onBeforeUnmount, onMounted } from "vue";
+import { ref, onMounted, onBeforeUnmount } from "vue";
 import Swal from "sweetalert2";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
+
+const route = useRoute();
+const router = useRouter();
+const id = route.params.id;
 
 const nombre = ref("");
 const descripcion = ref("");
@@ -89,87 +94,120 @@ const localFile = ref(null);
 const ubicacionPreviewUrl = ref(null);
 const localPreviewUrl = ref(null);
 
-const route = useRoute();
-
-onMounted(() => {
-  const id = route.query.id;
-  if (id) {
-    nombre.value = "Taco Real Tlaxcala";
-    descripcion.value = "Un local tradicional con tacos de papa y más";
-    calle.value = "Av. Reforma";
-    ciudad.value = "Tlaxcala";
-    codigoPostal.value = "90000";
-    estado.value = "Tlaxcala";
-    entreCalles.value = "Juárez y Allende";
-    colonia.value = "Centro";
-    ubicacionPreviewUrl.value = "https://via.placeholder.com/200x200?text=Ubicación";
-    localPreviewUrl.value = "https://via.placeholder.com/200x200?text=Local";
+onMounted(async () => {
+  try {
+    const res = await fetch(`/api/locales/${id}`);
+    const data = await res.json();
+    nombre.value = data.nombre_local;
+    descripcion.value = data.descripcion;
+    calle.value = data.calle;
+    ciudad.value = data.ciudad;
+    codigoPostal.value = data.codigo_postal;
+    estado.value = data.estado;
+    entreCalles.value = data.entre_calles;
+    colonia.value = data.colonia;
+    ubicacionPreviewUrl.value = data.imagen_ubicacion;
+    localPreviewUrl.value = data.foto_local;
+  } catch (e) {
+    Swal.fire("Error", "No se pudo cargar el local.", "error");
   }
 });
 
-function onUbicacionChange(event) {
-  const file = event.target.files[0];
+function onUbicacionChange(e) {
+  const file = e.target.files[0];
   if (file && file.type.startsWith("image/")) {
     if (ubicacionPreviewUrl.value) URL.revokeObjectURL(ubicacionPreviewUrl.value);
     ubicacionFile.value = file;
     ubicacionPreviewUrl.value = URL.createObjectURL(file);
-  } else {
-    ubicacionPreviewUrl.value = null;
-    ubicacionFile.value = null;
-    alert("Por favor selecciona una imagen válida para la ubicación.");
   }
 }
 
-function onLocalChange(event) {
-  const file = event.target.files[0];
+function onLocalChange(e) {
+  const file = e.target.files[0];
   if (file && file.type.startsWith("image/")) {
     if (localPreviewUrl.value) URL.revokeObjectURL(localPreviewUrl.value);
     localFile.value = file;
     localPreviewUrl.value = URL.createObjectURL(file);
-  } else {
-    localPreviewUrl.value = null;
-    localFile.value = null;
-    alert("Por favor selecciona una imagen válida para el local.");
   }
 }
 
-function showConfirmDialog(accion) {
-  const opciones = {
+function fileToBase64(file) {
+  return new Promise((resolve) => {
+    if (!file) return resolve(null);
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.readAsDataURL(file);
+  });
+}
+
+async function showConfirmDialog(accion) {
+  const opts = {
     editar: {
       title: "¿Seguro que quieres editar?",
-      text: "Estás a punto de modificar los datos.",
-      confirmButtonText: "Sí, editar",
-      successTitle: "¡Editado!",
-      successText: "El local fue actualizado.",
+      text: "Se actualizarán los datos.",
+      confirmText: "Sí, editar",
+      successMsg: "El local fue actualizado.",
+      method: "PUT",
+      url: `/api/locales/${id}`,
     },
     eliminar: {
       title: "¿Seguro que quieres eliminar?",
       text: "Esta acción no se puede deshacer.",
-      confirmButtonText: "Sí, eliminar",
-      successTitle: "¡Eliminado!",
-      successText: "El local fue eliminado.",
+      confirmText: "Sí, eliminar",
+      successMsg: "El local fue eliminado.",
+      method: "DELETE",
+      url: `/api/locales/${id}`,
     },
-  };
+  }[accion];
 
-  const { title, text, confirmButtonText, successTitle, successText } = opciones[accion];
-
-  Swal.fire({
-    title,
-    text,
+  const result = await Swal.fire({
+    title: opts.title,
+    text: opts.text,
     icon: "warning",
     showCancelButton: true,
-    confirmButtonColor: "#3085d6",
-    cancelButtonColor: "#d33",
-    confirmButtonText,
-  }).then((result) => {
-    if (result.isConfirmed) {
-      Swal.fire({
-        title: successTitle,
-        text: successText,
-        icon: "success",
-      });
-    }
+    confirmButtonText: opts.confirmText,
   });
+  if (!result.isConfirmed) return;
+
+  if (accion === "editar") {
+    const [fotoLocalB64, ubicB64] = await Promise.all([
+      fileToBase64(localFile.value),
+      fileToBase64(ubicacionFile.value),
+    ]);
+    const body = {
+      nombre: nombre.value,
+      descripcion: descripcion.value,
+      calle: calle.value,
+      ciudad: ciudad.value,
+      codigo_postal: codigoPostal.value,
+      estado: estado.value,
+      entre_calles: entreCalles.value,
+      colonia: colonia.value,
+      fotoLocal: fotoLocalB64 || localPreviewUrl.value,
+      imagenUbicacion: ubicB64 || ubicacionPreviewUrl.value,
+    };
+    const res = await fetch(opts.url, {
+      method: opts.method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      Swal.fire("Error", err.error || "No se pudo editar.", "error");
+      return;
+    }
+  } else {
+    const res = await fetch(opts.url, { method: opts.method });
+    if (!res.ok) {
+      const err = await res.json();
+      Swal.fire("Error", err.error || "No se pudo eliminar.", "error");
+      return;
+    }
+  }
+
+  Swal.fire("¡Listo!", opts.successMsg, "success");
+router.push("/locales");
+  if (accion === "eliminar") router.push("/locales");
 }
 
 onBeforeUnmount(() => {
@@ -177,6 +215,7 @@ onBeforeUnmount(() => {
   if (localPreviewUrl.value) URL.revokeObjectURL(localPreviewUrl.value);
 });
 </script>
+
 
 <style scoped>
 .contenedor {

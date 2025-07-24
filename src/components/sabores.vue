@@ -1,11 +1,14 @@
+<!-- src/components/sabores.vue -->
 <template>
   <div class="food-card" :class="{ orange: isHighlighted, yellow: !isHighlighted }">
-    <img :src="food.image" alt="Comida" />
+    <img :src="food.image" :alt="`Imagen de ${food.title}`" />
     <h3>{{ food.title }}</h3>
     <p>{{ food.description }}</p>
     <div class="buttons">
-      <button @click.stop="handleAdd">Agregar</button>
-      <button @click.stop="handleEdit">Editar</button>
+      <button @click="$emit('add', food)">Agregar</button>
+      <router-link :to="`/editar-taco/${food.id}`">
+        <button>Editar</button>
+      </router-link>
     </div>
   </div>
 </template>
@@ -14,19 +17,12 @@
 export default {
   name: "sabores",
   props: {
-    food: Object,
-    isHighlighted: Boolean,
-  },
-  methods: {
-    handleAdd() {
-      this.$emit("add", this.food);
-    },
-    handleEdit() {
-      this.$emit("edit", this.food);
-    },
+    food: { type: Object, required: true },
+    isHighlighted: { type: Boolean, default: false },
   },
 };
 </script>
+
 
 <style scoped>
 .food-card {
@@ -35,13 +31,10 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
   transition: transform 0.2s;
-  font-size: 14px;
   background-color: white;
-  min-height: 500px; /* estilo espejo largo */
-  height: 100%;
+  min-height: 500px;
 }
 
 .food-card.yellow {

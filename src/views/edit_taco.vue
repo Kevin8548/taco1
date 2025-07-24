@@ -36,41 +36,52 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: "EditarProducto",
-  data() {
-    return {
-      sabor: "",
-      precio: "",
-      descripcion: "",
-      previewUrl: null,
-      objectUrl: null,
-    };
-  },
-  methods: {
-    onFileChange(event) {
-      const file = event.target.files[0];
-      if (file && file.type.startsWith("image/")) {
-        if (this.objectUrl) URL.revokeObjectURL(this.objectUrl);
-        this.objectUrl = URL.createObjectURL(file);
-        this.previewUrl = this.objectUrl;
-      } else {
-        this.previewUrl = null;
-        alert("Por favor selecciona una imagen válida.");
-      }
-    },
-  },
-  beforeDestroy() {
-    if (this.objectUrl) {
-      URL.revokeObjectURL(this.objectUrl);
-    }
-  },
-};
-</script>
-
 <script setup>
+import { onMounted, ref, onUnmounted } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import Swal from "sweetalert2";
+
+const route = useRoute();
+const router = useRouter();
+const id = route.params.id;
+
+const sabor = ref("");
+const precio = ref("");
+const descripcion = ref("");
+const previewUrl = ref(null);
+let imagenBase64 = "";
+let objectUrl = null;
+
+const cargarTaco = async () => {
+  try {
+    const res = await fetch(`/api/tacos/${id}`);
+    const data = await res.json();
+    sabor.value = data.sabor;
+    precio.value = data.precio;
+    descripcion.value = data.descripcion;
+    previewUrl.value = data.imagen;
+    imagenBase64 = data.imagen;
+  } catch (e) {
+    alert("Error al cargar taco");
+  }
+};
+
+const onFileChange = (event) => {
+  const file = event.target.files[0];
+  if (file && file.type.startsWith("image/")) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      imagenBase64 = reader.result;
+      previewUrl.value = reader.result;
+    };
+    reader.readAsDataURL(file);
+
+    if (objectUrl) URL.revokeObjectURL(objectUrl);
+    objectUrl = URL.createObjectURL(file);
+  } else {
+    alert("Por favor selecciona una imagen válida.");
+  }
+};
 
 const showConfirmDialog = (action) => {
   const opciones = {
@@ -80,6 +91,7 @@ const showConfirmDialog = (action) => {
       confirmButtonText: "Estoy seguro",
       successTitle: "¡Editado!",
       successText: "El registro ha sido editado.",
+      onConfirm: actualizarTaco,
     },
     eliminar: {
       title: "¿Seguro que quieres eliminar?",
@@ -87,10 +99,11 @@ const showConfirmDialog = (action) => {
       confirmButtonText: "Sí, estoy seguro",
       successTitle: "¡Eliminado!",
       successText: "El registro ha sido eliminado.",
+      onConfirm: eliminarTaco,
     },
   };
 
-  const { title, text, confirmButtonText, successTitle, successText } = opciones[action];
+  const { title, text, confirmButtonText, successTitle, successText, onConfirm } = opciones[action];
 
   Swal.fire({
     title,
@@ -100,17 +113,57 @@ const showConfirmDialog = (action) => {
     confirmButtonColor: "#3085d6",
     cancelButtonColor: "#d33",
     confirmButtonText,
-  }).then((result) => {
+  }).then(async (result) => {
     if (result.isConfirmed) {
+      await onConfirm();
       Swal.fire({
         title: successTitle,
         text: successText,
         icon: "success",
       });
+      router.push("/sabores");
     }
   });
 };
+
+const actualizarTaco = async () => {
+  const res = await fetch(`/api/tacos/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      sabor: sabor.value,
+      precio: precio.value,
+      descripcion: descripcion.value,
+      imagen: imagenBase64,
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    alert("Error al actualizar taco: " + err.error);
+  }
+};
+
+const eliminarTaco = async () => {
+  const res = await fetch(`/api/tacos/${id}`, {
+    method: "DELETE",
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    alert("Error al eliminar taco: " + err.error);
+  }
+};
+
+onMounted(() => {
+  cargarTaco();
+});
+
+onUnmounted(() => {
+  if (objectUrl) URL.revokeObjectURL(objectUrl);
+});
 </script>
+
 
 <style scoped>
 .contenedor {

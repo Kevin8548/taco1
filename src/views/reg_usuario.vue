@@ -21,11 +21,23 @@
       </div>
       <div class="campo">
         <label>Tipo de usuario</label>
-        <select v-model="form.tipoUsuario">
-          <option value="Administrador">Administrador</option>
-          <option value="Empleado">Empleado</option>
-          <option value="Cliente">Cliente</option>
+        <select v-model="form.tipo_usuario">
+          <option value="admin">Administrador</option>
+          <option value="vendedor">Empleado</option>
+          <option value="cliente">Cliente</option>
         </select>
+      </div>
+    </div>
+
+    <!-- Correo y Contraseña -->
+    <div class="grupo">
+      <div class="campo">
+        <label>Correo electrónico</label>
+        <input v-model="form.correo_electronico" type="email" placeholder="Ej. usuario@ejemplo.com" />
+      </div>
+      <div class="campo">
+        <label>Contraseña</label>
+        <input v-model="form.contrasena" type="password" placeholder="Ingrese una contraseña segura" />
       </div>
     </div>
 
@@ -45,17 +57,17 @@
     <div class="grupo">
       <div class="campo">
         <label>Código postal</label>
-        <input v-model="form.direccion.codigoPostal" type="text" placeholder="Ej. 06000" />
+        <input v-model="form.direccion.codigo_postal" type="text" placeholder="Ej. 06000" />
       </div>
       <div class="campo">
         <label>Estado / Provincia / Zona</label>
-        <input v-model="form.direccion.estado" type="text" placeholder="Ej. CDMX" />
+        <input v-model="form.direccion.estado_provincia_zona" type="text" placeholder="Ej. CDMX" />
       </div>
     </div>
 
     <div class="campo">
       <label>Entre calles</label>
-      <input v-model="form.direccion.entreCalles" type="text" placeholder="Ej. Juárez y Madero" />
+      <input v-model="form.direccion.entre_calles" type="text" placeholder="Ej. Juárez y Madero" />
     </div>
 
     <!-- Imagen de perfil -->
@@ -69,7 +81,7 @@
 
     <!-- Botón -->
     <div class="acciones">
-      <button class="registrar" @click="confirmarRegistro">Registrar</button>
+      <button class="registrar" @click="registrarUsuario">Registrar</button>
     </div>
   </div>
 </template>
@@ -85,16 +97,18 @@ export default {
         nombre: "",
         apellidos: "",
         contacto: "",
-        tipoUsuario: "Administrador",
+        tipo_usuario: "",
+        correo_electronico: "",
+        contrasena: "",
         direccion: {
           calle: "",
           ciudad: "",
-          codigoPostal: "",
-          estado: "",
-          entreCalles: "",
+          codigo_postal: "",
+          estado_provincia_zona: "",
+          entre_calles: "",
         },
+        foto_perfil: null,
       },
-      usuarioFile: null,
       usuarioPreviewUrl: null,
     };
   },
@@ -102,34 +116,87 @@ export default {
     onUsuarioImageChange(event) {
       const file = event.target.files[0];
       if (file && file.type.startsWith("image/")) {
-        if (this.usuarioPreviewUrl) URL.revokeObjectURL(this.usuarioPreviewUrl);
-        this.usuarioFile = file;
-        this.usuarioPreviewUrl = URL.createObjectURL(file);
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          this.form.foto_perfil = e.target.result;
+          if (this.usuarioPreviewUrl) URL.revokeObjectURL(this.usuarioPreviewUrl);
+          this.usuarioPreviewUrl = URL.createObjectURL(file);
+        };
+        reader.readAsDataURL(file);
       } else {
+        this.form.foto_perfil = null;
+        if (this.usuarioPreviewUrl) URL.revokeObjectURL(this.usuarioPreviewUrl);
         this.usuarioPreviewUrl = null;
-        this.usuarioFile = null;
-        alert("Por favor selecciona una imagen válida.");
+        Swal.fire("Imagen inválida", "Por favor selecciona una imagen válida.", "warning");
       }
     },
-    confirmarRegistro() {
+    registrarUsuario() {
       Swal.fire({
-        title: "¿Desea registrar este Usuario?",
+        title: "¿Desea registrar este usuario?",
         text: "Se guardará el nuevo usuario en el sistema.",
         icon: "warning",
         showCancelButton: true,
         confirmButtonColor: "#FFF07F",
         cancelButtonColor: "#d33",
-        confirmButtonText: "¡Sí, registrar Usuario!",
+        confirmButtonText: "¡Sí, registrar usuario!",
         cancelButtonText: "Cancelar",
       }).then((result) => {
         if (result.isConfirmed) {
-          Swal.fire({
-            title: "¡Registrado con éxito!",
-            text: "Usuario registrado exitosamente.",
-            icon: "success",
-          });
+          const payload = {
+            nombre: this.form.nombre,
+            apellidos: this.form.apellidos,
+            contacto: this.form.contacto,
+            tipo_usuario: this.form.tipo_usuario,
+            correo_electronico: this.form.correo_electronico,
+            contrasena: this.form.contrasena,
+            calle: this.form.direccion.calle,
+            ciudad: this.form.direccion.ciudad,
+            codigo_postal: parseInt(this.form.direccion.codigo_postal) || null,
+            estado_provincia_zona: this.form.direccion.estado_provincia_zona,
+            entre_calles: this.form.direccion.entre_calles,
+            foto_perfil: this.form.foto_perfil,
+          };
+
+          fetch("http://localhost:3000/api/usuarios", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          })
+            .then((res) => res.json())
+            .then((data) => {
+              if (data.success) {
+                Swal.fire("¡Registrado con éxito!", "Usuario registrado exitosamente.", "success");
+                this.resetForm();
+              } else {
+                throw new Error("No se pudo registrar.");
+              }
+            })
+            .catch((err) => {
+              console.error(err);
+              Swal.fire("Error", "Hubo un problema al registrar el usuario.", "error");
+            });
         }
       });
+    },
+    resetForm() {
+      this.form = {
+        nombre: "",
+        apellidos: "",
+        contacto: "",
+        tipo_usuario: "",
+        correo_electronico: "",
+        contrasena: "",
+        direccion: {
+          calle: "",
+          ciudad: "",
+          codigo_postal: "",
+          estado_provincia_zona: "",
+          entre_calles: "",
+        },
+        foto_perfil: null,
+      };
+      if (this.usuarioPreviewUrl) URL.revokeObjectURL(this.usuarioPreviewUrl);
+      this.usuarioPreviewUrl = null;
     },
   },
   beforeUnmount() {
@@ -137,6 +204,9 @@ export default {
   },
 };
 </script>
+
+
+
 
 <style scoped>
 .contenedor {
@@ -184,6 +254,8 @@ label {
 }
 
 input[type="text"],
+input[type="email"],
+input[type="password"],
 select,
 input[type="file"] {
   padding: 14px 18px;
@@ -195,9 +267,8 @@ input[type="file"] {
   transition: border-color 0.3s ease;
 }
 
-input[type="text"]:focus,
-select:focus,
-input[type="file"]:focus {
+input:focus,
+select:focus {
   border-color: #9e5700;
   outline: none;
 }

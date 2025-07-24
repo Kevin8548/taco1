@@ -1,3 +1,4 @@
+<!-- src/views/RegistrarLocal.vue -->
 <template>
   <div class="contenedor">
     <h1>Registrar Local</h1>
@@ -95,29 +96,27 @@ export default {
     onUbicacionChange(event) {
       const file = event.target.files[0];
       if (file && file.type.startsWith("image/")) {
-        if (this.ubicacionPreviewUrl) URL.revokeObjectURL(this.ubicacionPreviewUrl);
         this.ubicacionFile = file;
         this.ubicacionPreviewUrl = URL.createObjectURL(file);
       } else {
-        this.ubicacionPreviewUrl = null;
         this.ubicacionFile = null;
-        alert("Por favor selecciona una imagen válida para la ubicación.");
+        this.ubicacionPreviewUrl = null;
+        Swal.fire("Error", "Selecciona una imagen válida para la ubicación.", "warning");
       }
     },
     onLocalChange(event) {
       const file = event.target.files[0];
       if (file && file.type.startsWith("image/")) {
-        if (this.localPreviewUrl) URL.revokeObjectURL(this.localPreviewUrl);
         this.localFile = file;
         this.localPreviewUrl = URL.createObjectURL(file);
       } else {
-        this.localPreviewUrl = null;
         this.localFile = null;
-        alert("Por favor selecciona una imagen válida para el local.");
+        this.localPreviewUrl = null;
+        Swal.fire("Error", "Selecciona una imagen válida para el local.", "warning");
       }
     },
-    showConfirmDialog() {
-      Swal.fire({
+    async showConfirmDialog() {
+      const confirm = await Swal.fire({
         title: "¿Deseas registrar este local?",
         text: "Se guardarán los datos ingresados.",
         icon: "question",
@@ -126,16 +125,70 @@ export default {
         cancelButtonColor: "#aaa",
         confirmButtonText: "Sí, registrar",
         cancelButtonText: "Cancelar",
-      }).then((result) => {
-        if (result.isConfirmed) {
-          Swal.fire({
-            title: "¡Registrado!",
-            text: "El local ha sido registrado exitosamente.",
-            icon: "success",
-          });
-          // Aquí puedes agregar la lógica para enviar los datos al backend
-        }
       });
+
+      if (!confirm.isConfirmed) return;
+
+      try {
+        const [fotoLocalBase64, ubicacionBase64] = await Promise.all([
+          this.fileToBase64(this.localFile),
+          this.fileToBase64(this.ubicacionFile),
+        ]);
+
+        const data = {
+          nombre: this.nombre,
+          descripcion: this.descripcion,
+          calle: this.calle,
+          ciudad: this.ciudad,
+          codigo_postal: this.codigoPostal,
+          estado: this.estado,
+          entre_calles: this.entreCalles,
+          colonia: this.colonia,
+          // ¡aquí pasamos camelCase!
+          fotoLocal: fotoLocalBase64,
+          imagenUbicacion: ubicacionBase64,
+          fk_vendedor: 1,
+        };
+
+        const res = await fetch("/api/locales", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
+        const result = await res.json();
+
+        if (result.success) {
+          Swal.fire("¡Registrado!", "El local se ha registrado correctamente.", "success");
+          this.resetForm();
+        } else {
+          throw new Error(result.error || "No se pudo registrar el local.");
+        }
+      } catch (error) {
+        console.error("Error al registrar:", error);
+        Swal.fire("Error", error.message, "error");
+      }
+    },
+    fileToBase64(file) {
+      return new Promise((resolve) => {
+        if (!file) return resolve(null);
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.readAsDataURL(file);
+      });
+    },
+    resetForm() {
+      this.nombre = "";
+      this.descripcion = "";
+      this.calle = "";
+      this.ciudad = "";
+      this.codigoPostal = "";
+      this.estado = "";
+      this.entreCalles = "";
+      this.colonia = "";
+      this.ubicacionFile = null;
+      this.ubicacionPreviewUrl = null;
+      this.localFile = null;
+      this.localPreviewUrl = null;
     },
   },
   beforeUnmount() {

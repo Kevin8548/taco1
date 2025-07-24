@@ -9,7 +9,7 @@
       </div>
       <div class="campo">
         <label>Precio</label>
-        <input v-model="form.precio" type="text" placeholder="Ej. $25.00" />
+        <input v-model="form.precio" type="text" placeholder="Ej. 25.00" />
       </div>
     </div>
 
@@ -43,8 +43,8 @@ export default {
         sabor: "",
         precio: "",
         descripcion: "",
+        imagen: null, // base64 string
       },
-      file: null,
       previewUrl: null,
     };
   },
@@ -52,66 +52,83 @@ export default {
     onImageChange(event) {
       const file = event.target.files[0];
       if (file && file.type.startsWith("image/")) {
-        if (this.previewUrl) URL.revokeObjectURL(this.previewUrl);
-        this.file = file;
-        this.previewUrl = URL.createObjectURL(file);
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          this.form.imagen = e.target.result; // base64 string
+          if (this.previewUrl) URL.revokeObjectURL(this.previewUrl);
+          this.previewUrl = URL.createObjectURL(file);
+        };
+        reader.readAsDataURL(file);
       } else {
+        this.form.imagen = null;
+        if (this.previewUrl) URL.revokeObjectURL(this.previewUrl);
         this.previewUrl = null;
-        this.file = null;
-        alert("Por favor selecciona una imagen válida.");
+        Swal.fire("Imagen inválida", "Por favor selecciona una imagen válida.", "warning");
       }
     },
-    registrarSabor() {
-  Swal.fire({
-    title: "¿Desea registrar este sabor?",
-    text: "Se guardará el nuevo sabor en el sistema.",
-    icon: "warning",
-    showCancelButton: true,
-    confirmButtonColor: "#FFF07F",
-    cancelButtonColor: "#d33",
-    confirmButtonText: "¡Sí, registrar sabor!",
-    cancelButtonText: "Cancelar",
-  }).then((result) => {
-    if (result.isConfirmed) {
-      // Llama al backend
-      fetch("http://localhost:3000/api/tacos", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          sabor: this.form.sabor,
-          precio: parseFloat(this.form.precio),
-          descripcion: this.form.descripcion,
-        }),
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.success) {
-            Swal.fire("¡Registrado con éxito!", "Sabor registrado exitosamente.", "success");
-            this.form.sabor = "";
-            this.form.precio = "";
-            this.form.descripcion = "";
-            this.file = null;
-            this.previewUrl = null;
-          } else {
-            throw new Error("No se pudo registrar.");
-          }
-        })
-        .catch((err) => {
-          console.error(err);
-          Swal.fire("Error", "Hubo un problema al registrar el sabor.", "error");
-        });
-    }
-  });
-}
 
+    registrarSabor() {
+      Swal.fire({
+        title: "¿Desea registrar este sabor?",
+        text: "Se guardará el nuevo sabor en el sistema.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#FFF07F",
+        cancelButtonColor: "#d33",
+        confirmButtonText: "¡Sí, registrar sabor!",
+        cancelButtonText: "Cancelar",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          const payload = {
+            sabor: this.form.sabor,
+            precio: parseFloat(this.form.precio) || 0,
+            descripcion: this.form.descripcion,
+            imagen: this.form.imagen, // base64
+            fk_local: 1,
+          };
+
+          fetch("http://localhost:3000/api/tacos", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          })
+            .then((res) => res.json())
+            .then((data) => {
+              if (data.success) {
+                Swal.fire("¡Registrado con éxito!", "Sabor registrado exitosamente.", "success");
+                this.resetForm();
+              } else {
+                throw new Error("No se pudo registrar.");
+              }
+            })
+            .catch((err) => {
+              console.error(err);
+              Swal.fire("Error", "Hubo un problema al registrar el sabor.", "error");
+            });
+        }
+      });
+    },
+
+    resetForm() {
+      this.form = {
+        sabor: "",
+        precio: "",
+        descripcion: "",
+        imagen: null,
+      };
+      if (this.previewUrl) URL.revokeObjectURL(this.previewUrl);
+      this.previewUrl = null;
+    },
   },
+
   beforeUnmount() {
     if (this.previewUrl) URL.revokeObjectURL(this.previewUrl);
   },
 };
 </script>
+
 
 <style scoped>
 .contenedor {

@@ -1,3 +1,4 @@
+<!-- src/views/LocalesView.vue -->
 <template>
   <div class="app-container">
     <header>
@@ -5,13 +6,16 @@
       <div class="search-bar">
         <input v-model="search" placeholder="Buscar..." />
         <button @click="searchLocales">Buscar</button>
+        <router-link to="/registrar_local">
+          <button>Registrar Nuevo</button>
+        </router-link>
       </div>
     </header>
 
     <div class="card-grid">
       <Locales
         v-for="(item, index) in filteredLocales"
-        :key="index"
+        :key="item.id"
         :local="item"
         :isHighlighted="index % 2 === 1"
       />
@@ -20,66 +24,52 @@
 </template>
 
 <script>
-import Locales from "../components/locales.vue";
+import Locales from "../components/Locales.vue";
+import imgLocal from "../assets/img/repartocansta.png";
 
 export default {
   name: "LocalesView",
-  components: {
-    Locales,
-  },
+  components: { Locales },
   data() {
     return {
       search: "",
-      locales: [
-        {
-          title: "Taco papa con pistache",
-          image: "../assets/img/tacostlaxcala.png",
-          description:
-            "Tortillas de maíz, papas (sobras), frías. Salsa verde o roja, para acompañar",
-        },
-        {
-          title: "Taco de carnitas",
-          image: "https://example.com/taco.jpg",
-          description:
-            "Carnitas tradicionales servidas en tortilla de maíz con salsa y cebolla.",
-        },
-        {
-          title: "Taco árabe",
-          image: "https://example.com/taco2.jpg",
-          description: "Estilo Puebla, carne marinada en pan pita.",
-        },
-        {
-          title: "Taco de barbacoa",
-          image: "https://example.com/taco3.jpg",
-          description: "Cocido al horno en pencas de maguey.",
-        },
-        {
-          title: "Taco de asada",
-          image: "https://example.com/taco4.jpg",
-          description: "Con carne asada, cebolla, y guacamole.",
-        },
-        {
-          title: "Taco de birria",
-          image: "https://example.com/taco5.jpg",
-          description: "Deliciosa birria jugosa en tortilla dorada.",
-        },
-      ],
+      locales: [],
     };
   },
   computed: {
     filteredLocales() {
       return this.locales.filter((local) =>
-        local.title.toLowerCase().includes(this.search.toLowerCase())
+        (local.title || "").toLowerCase().includes(this.search.toLowerCase())
       );
     },
   },
   methods: {
     searchLocales() {
-      // Funcionalidad opcional
+      // Si quieres buscar en backend, implementa aquí.
+      // Por ahora sólo filtra localmente en computed.
     },
+    fetchLocales() {
+      fetch("/api/locales")
+        .then((res) => res.json())
+        .then((data) => {
+          this.locales = data.map((item) => ({
+            id: item.id,
+            title: item.nombre_local,
+            description: `${item.calle || ""}, ${item.ciudad || ""}`,
+            // ahora camelCase para que coincida con el backend
+            fotoLocal: item.foto_local,
+            imagenUbicacion: item.imagen_ubicacion,
+          }));
+        })
+        .catch((err) => console.error("Error al cargar locales:", err));
+    },
+  },
+  mounted() {
+    this.fetchLocales();
   },
 };
 </script>
+
 
 <style scoped>
 .app-container {

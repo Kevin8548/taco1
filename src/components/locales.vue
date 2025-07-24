@@ -1,41 +1,52 @@
+<!-- src/components/Locales.vue -->
 <template>
   <div class="local-card" :class="{ orange: isHighlighted, yellow: !isHighlighted }">
-    <img :src="local.image" alt="Local" />
+    <!-- Foto del Local -->
+    <img :src="fotoLocalSrc" alt="Local" class="local-card" />
     <h3>{{ local.title }}</h3>
     <p>{{ local.description }}</p>
-
-    <div class="card-footer-image">
-      <img
-        src="https://via.placeholder.com/150x80.png?text=Footer+Test"
-        alt="Footer Test"
-      />
-    </div>
-
-    <div class="card-buttons">
-      <button class="edit-btn" @click="onEdit">Editar</button>
-      <!-- Botón Eliminar eliminado -->
+    <!-- Imagen de Ubicación -->
+    <img v-if="ubicacionSrc" :src="ubicacionSrc" alt="Ubicación" class="local-card" />
+    <div class="buttons">
+      <router-link :to="`/editar-local/${local.id}`">
+        <button>Editar</button>
+      </router-link>
     </div>
   </div>
 </template>
 
-<script setup>
-import { useRouter } from "vue-router";
+<script>
+import imgFallback from "../assets/img/repartocansta.png";
 
-const props = defineProps({
-  local: Object,
-  isHighlighted: Boolean,
-});
-
-const router = useRouter();
-
-function onEdit() {
-  router.push({ path: "/editar_local", query: { id: props.local.id } });
-}
+export default {
+  name: "Locales",
+  props: {
+    local: { type: Object, required: true },
+    isHighlighted: { type: Boolean, default: false },
+  },
+  computed: {
+    fotoLocalSrc() {
+      const b64 = this.local.fotoLocal;
+      if (!b64) return imgFallback;
+      return b64.startsWith("data:image")
+        ? b64
+        : `data:image/jpeg;base64,${b64}`;
+    },
+    ubicacionSrc() {
+      const b64 = this.local.imagenUbicacion;
+      if (!b64) return null;
+      return b64.startsWith("data:image")
+        ? b64
+        : `data:image/jpeg;base64,${b64}`;
+    },
+  },
+};
 </script>
+
 
 <style scoped>
 .local-card {
-  padding: 20px;
+  padding: 10px;
   border-radius: 10px;
   width: 100%;
   display: flex;
@@ -43,7 +54,7 @@ function onEdit() {
   align-items: center;
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
   transition: transform 0.2s;
-  font-size: 14px;
+  font-size: 30px;
   background-color: white;
 }
 
@@ -59,8 +70,8 @@ function onEdit() {
 }
 
 .local-card img {
-  width: 100%;
-  height: 120px;
+  width: 60%;
+  height: 18%px;
   object-fit: cover;
   border-radius: 10px;
   margin-bottom: 10px;
@@ -103,13 +114,40 @@ function onEdit() {
   transition: background 0.2s;
 }
 
-.edit-btn {
-  background-color: #4caf50;
-  color: white;
-}
-.edit-btn:hover {
-  background-color: #388e3c;
+.buttons {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  margin-top: 15px;
 }
 
-/* delete-btn ya no se usa */
-</style>
+.buttons {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 20px;
+  outline: none;
+}
+
+.buttons button {
+  background-color: #bc8912;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.2s ease;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  outline: none;
+}
+
+/* Hover effect */
+.buttons button:hover {
+  background-color: #f3ff11;
+}
+
+ </style>
