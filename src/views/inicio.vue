@@ -1,64 +1,22 @@
 <template>
   <div class="page">
-    <h1 class="title">Sabor que no se olvida</h1>
+    <h1 class="title">{{ portada.titulo }}</h1>
 
     <section class="intro-section">
-      <h2 class="section-title">Chiquihuitl Tacos</h2>
-      <img
-        src="../assets/img/tacostlaxcala.png"
-        alt="Grupo con tacos de canasta"
-        class="main-image"
-      />
-      <p class="section-text">
-        En Chiquihuitl Tacos llevamos la tradición en alto: ganadores del Récord Guinness
-        por nuestros 186 sabores de tacos de canasta. Cada taco es una muestra del sabor
-        de México, hecho con historia, cariño y orgullo nacional. Desde los clásicos de
-        siempre hasta combinaciones únicas, cada bocado es un homenaje a nuestras raíces y
-        a la creatividad que nos distingue.
-      </p>
+      <h2 class="section-title">{{ portada.titulo }}</h2>
+      <img :src="portada.imagen" alt="Grupo con tacos de canasta" class="main-image" />
+      <p class="section-text">{{ portada.texto }}</p>
+      <div class="edit-btn-container">
+        <router-link to="/editar-inicio" class="edit-btn">✏️ Editar contenido</router-link>
+      </div>
     </section>
 
     <section class="gallery">
-      <div class="image-block">
-        <img src="../assets/img/repartocansta.png" alt="Tacos cerca" />
-        <p>
-          Una canasta, cientos de historias Cada uno de nuestros 186 sabores cuenta una
-          historia: de familia, de calle, de barrio, de México. En cada mordida viajas a
-          diferentes rincones del país sin salir de tu mesa.
-        </p>
-      </div>
-      <div class="image-block">
-        <img src="../assets/img/tacosalsa.jpg" alt="Taco verde" />
-        <p>
-          ¡Somos historia y sabor en una canasta! Chiquihuitl Tacos fue reconocido con el
-          Récord Guinness por lograr 186 sabores diferentes de tacos de canasta. Un logro
-          que no solo nos llena de orgullo, sino que representa el corazón de la
-          gastronomía mexicana.
-        </p>
-      </div>
-      <div class="image-block">
-        <img src="../assets/img/tacospapa.jpg" alt="Feria de tacos" />
-        <p>
-          El alma en una canasta “Chiquihuitl” significa canasta en náhuatl. Y para
-          nosotros, es más que un nombre: es el símbolo que guarda el calor, el sabor y la
-          tradición de nuestra cocina. Así nace cada taco: del alma a tu paladar.
-        </p>
-      </div>
-      <div class="image-block">
-        <img src="../assets/img/tacosplato.png" alt="Tacos dorados" />
-        <p>
-          El alma en una canasta “Chiquihuitl” significa canasta en náhuatl. Y para
-          nosotros, es más que un nombre: es el símbolo que guarda el calor, el sabor y la
-          tradición de nuestra cocina. Así nace cada taco: del alma a tu paladar.
-        </p>
-      </div>
-      <div class="image-block">
-        <img src="../assets/img/entrega.png" alt="Entrega de tacos" />
-        <p>
-          Tacos sudaditos, directo a tu antojo No importa si estás en casa, en la oficina
-          o en la calle. Nuestro sabor viaja contigo. Pide tus favoritos y descubre por
-          qué somos los tacos de canasta más variados del mundo.
-        </p>
+      <div v-for="(item, index) in galeriaCompleta" :key="index" class="image-block">
+        <div class="image-wrapper">
+          <img :src="item.imagen" :alt="'Galería ' + index" />
+        </div>
+        <p>{{ item.texto }}</p>
       </div>
     </section>
   </div>
@@ -66,13 +24,45 @@
 
 <script>
 export default {
-  name: "Sabores",
+  name: "Inicio",
+  data() {
+    return {
+      portada: {
+        titulo: "Sabor que no se olvida",
+        texto: "En Chiquihuitl Tacos llevamos la tradición en alto...",
+        imagen: "/img/tacostlaxcala.png"
+      },
+      galeria: []
+    };
+  },
+  computed: {
+    galeriaCompleta() {
+      const defaultItem = {
+        imagen: "/img/default.png",
+        texto: "Contenido pendiente..."
+      };
+      const actual = [...this.galeria];
+      while (actual.length < 6) actual.push({ ...defaultItem });
+      return actual;
+    }
+  },
+  async mounted() {
+    try {
+      const res = await fetch("/api/contenido-inicio");
+      const data = await res.json();
+      const portadaItem = data.find((i) => i.tipo === "portada");
+      if (portadaItem) this.portada = portadaItem;
+      this.galeria = data.filter((i) => i.tipo === "galeria");
+    } catch (e) {
+      console.error("Error al cargar contenido:", e);
+    }
+  }
 };
 </script>
 
 <style scoped>
 .page {
-  background-color: white; /* rosa claro */
+  background-color: white;
   padding: 16px;
   font-family: "Arial", sans-serif;
 }
@@ -103,23 +93,15 @@ export default {
   font-weight: bold;
 }
 
-.subtitle {
-  font-size: 1.5rem;
-  color: #b3340b;
-  margin-bottom: 10px;
-}
-
-.section {
-  background-color: #e96e42;
-  padding: 16px;
-  border-radius: 8px;
-  color: white;
-  margin-bottom: 20px;
+.section-text {
+  font-size: 1rem;
+  color: #333;
+  text-align: center;
 }
 
 .main-image {
   width: 100%;
-  max-width: 600px; /* o el ancho real de la imagen */
+  max-width: 600px;
   margin-bottom: 10px;
   border-radius: 8px;
   display: block;
@@ -140,23 +122,44 @@ export default {
   border-radius: 8px;
 }
 
-.image-block img {
+.image-wrapper {
   width: 100%;
-  max-width: 400px; /* Ajusta según tu diseño */
-  height: auto; /* Mantiene proporción */
+  max-width: 400px;
+  height: 200px; /* ⬅️ Alto fijo uniforme */
+  overflow: hidden;
+  margin: 0 auto 6px;
   border-radius: 6px;
-  margin-bottom: 6px;
-  image-rendering: auto;
+}
+
+.image-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* ⬅️ Para evitar deformaciones */
   display: block;
-  margin-left: auto;
-  margin-right: auto;
 }
 
 .image-block p {
   font-size: 0.9rem;
   color: #333;
 }
-section-title {
-  color: black;
+
+.edit-btn-container {
+  text-align: center;
+  margin-top: 10px;
+}
+
+.edit-btn {
+  background-color: #ffc107;
+  color: #000;
+  padding: 8px 16px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: bold;
+  box-shadow: 1px 1px 5px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.3s ease;
+}
+
+.edit-btn:hover {
+  background-color: #e0a800;
 }
 </style>

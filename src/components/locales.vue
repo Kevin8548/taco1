@@ -1,16 +1,30 @@
-<!-- src/components/Locales.vue -->
 <template>
   <div class="local-card" :class="{ orange: isHighlighted, yellow: !isHighlighted }">
-    <!-- Foto del Local -->
-    <img :src="fotoLocalSrc" alt="Local" class="local-card" />
+    <img :src="fotoLocalSrc" alt="Foto del local" class="local-img" />
+
     <h3>{{ local.title }}</h3>
-    <p>{{ local.description }}</p>
-    <!-- Imagen de Ubicación -->
-    <img v-if="ubicacionSrc" :src="ubicacionSrc" alt="Ubicación" class="local-card" />
+
+    <p class="local-address">
+      {{ local.street }}, {{ local.neighborhood }}, {{ local.city }}, {{ local.state }} - CP {{ local.zip }}
+    </p>
+
+    <p class="local-description">{{ local.description }}</p>
+
+    <img
+      v-if="ubicacionSrc"
+      :src="ubicacionSrc"
+      alt="Ubicación"
+      class="local-img ubicacion"
+    />
+
     <div class="buttons">
       <router-link :to="`/editar-local/${local.id}`">
         <button>Editar</button>
       </router-link>
+      <router-link :to="`/locales/${local.id}/comentarios`">
+     <button>Comentarios</button>
+   </router-link>
+
     </div>
   </div>
 </template>
@@ -43,6 +57,73 @@ export default {
 };
 </script>
 
+<style scoped>
+.local-card {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.local-card.orange {
+  background: #fff8e1;
+}
+
+.local-card.yellow {
+  background: #e3f2fd;
+}
+
+.local-img {
+  width: 100%;
+  max-height: 150px;
+  object-fit: cover;
+  border-radius: 4px;
+  margin-bottom: 12px;
+}
+
+.ubicacion {
+  margin-top: 8px;
+}
+
+.local-address {
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-align: center;
+  margin: 8px 0;
+}
+
+.local-description {
+  font-size: 0.85rem;
+  color: #555;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.buttons {
+  margin-top: auto;
+}
+
+.buttons a {
+  text-decoration: none; /* Quita subrayado del link */
+}
+
+.buttons button {
+  padding: 6px 12px;
+  background-color: #1976d2;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  text-decoration: none; /* Por si acaso */
+}
+
+.buttons button:hover {
+  background-color: #1565c0;
+}
+</style>
 
 <style scoped>
 .local-card {
@@ -54,8 +135,6 @@ export default {
   align-items: center;
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
   transition: transform 0.2s;
-  font-size: 30px;
-  background-color: white;
 }
 
 .local-card.yellow {
@@ -69,58 +148,41 @@ export default {
   transform: scale(1.03);
 }
 
-.local-card img {
+/* Imágenes sin fondo blanco */
+.local-img {
   width: 60%;
-  height: 18%px;
   object-fit: cover;
   border-radius: 10px;
   margin-bottom: 10px;
+  background-color: transparent;
 }
 
+/* Título */
 .local-card h3 {
   margin: 8px 0 4px;
   text-align: center;
   font-size: 16px;
 }
 
-.local-card p {
+/* Dirección centrada */
+.local-address {
+  text-align: center;
+  font-size: 14px;
+  margin: 4px auto;
+  max-width: 90%;
+}
+
+/* Descripción centrada */
+.local-description {
   text-align: center;
   font-size: 13px;
+  color: #333;
+  margin-top: 4px;
+  margin-bottom: 10px;
+  font-style: italic;
 }
 
-.card-footer-image img {
-  margin-top: 15px;
-  width: 100%;
-  border-radius: 8px;
-}
-
-.card-buttons {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  margin-top: 15px;
-  width: 100%;
-}
-
-.card-buttons button {
-  flex: 1;
-  height: 45px;
-  padding: 6px 8px;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.buttons {
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  margin-top: 15px;
-}
-
+/* Botones */
 .buttons {
   display: flex;
   justify-content: center;
@@ -142,12 +204,9 @@ export default {
   font-size: 13px;
   display: flex;
   align-items: center;
-  outline: none;
 }
 
-/* Hover effect */
 .buttons button:hover {
   background-color: #f3ff11;
 }
-
- </style>
+</style>

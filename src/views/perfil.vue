@@ -38,11 +38,11 @@
         </div>
       </div>
 
-      <div class="opcion" @click="edit_taco">
-        <i class="icon">✏️🌮</i>
+      <div class="opcion" @click="tabla_pedidos">
+        <i class="icon">➕🌮</i>
         <div>
-          <p class="titulo">Editar sabor</p>
-          <p class="descripcion">Edita tus datos</p>
+          <p class="titulo">Tabla pedidos</p>
+          <p class="descripcion">Ver todos los pedidos</p>
         </div>
       </div>
 
@@ -85,6 +85,7 @@
 
 <script>
 import Comentarios from './comentarios.vue';
+import Tabla_pedidos from './tabla_pedidos.vue';
 
 export default {
   data() {
@@ -109,8 +110,8 @@ export default {
       this.$router.push("/editar_usuario");
     },
 
-    edit_taco() {
-      this.$router.push("/editar_taco");
+    tabla_pedidos() {
+      this.$router.push("/tabla_pedidos");
     },
     reg_taco() {
       this.$router.push("/registrar_taco");

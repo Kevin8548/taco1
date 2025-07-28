@@ -1,4 +1,3 @@
-<!-- src/views/RegistrarLocal.vue -->
 <template>
   <div class="contenedor">
     <h1>Registrar Local</h1>

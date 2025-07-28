@@ -3,7 +3,6 @@
     <h1>Editar Local</h1>
 
     <div class="grupo">
-      <!-- Campos idénticos al formulario de registro -->
       <div class="campo">
         <label>Nombre del Local</label>
         <input type="text" v-model="nombre" placeholder="Ej. Tacos Don Memo" />

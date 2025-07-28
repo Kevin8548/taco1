@@ -1,4 +1,3 @@
-<!-- src/views/LocalesView.vue -->
 <template>
   <div class="app-container">
     <header>
@@ -25,7 +24,6 @@
 
 <script>
 import Locales from "../components/Locales.vue";
-import imgLocal from "../assets/img/repartocansta.png";
 
 export default {
   name: "LocalesView",
@@ -39,14 +37,13 @@ export default {
   computed: {
     filteredLocales() {
       return this.locales.filter((local) =>
-        (local.title || "").toLowerCase().includes(this.search.toLowerCase())
+        local.title.toLowerCase().includes(this.search.toLowerCase())
       );
     },
   },
   methods: {
     searchLocales() {
-      // Si quieres buscar en backend, implementa aquí.
-      // Por ahora sólo filtra localmente en computed.
+      // Si en el futuro quieres buscar en el backend, haz la petición aquí
     },
     fetchLocales() {
       fetch("/api/locales")
@@ -55,8 +52,12 @@ export default {
           this.locales = data.map((item) => ({
             id: item.id,
             title: item.nombre_local,
-            description: `${item.calle || ""}, ${item.ciudad || ""}`,
-            // ahora camelCase para que coincida con el backend
+            description: item.descripcion,
+            street: item.calle,
+            neighborhood: item.colonia,
+            city: item.ciudad,
+            state: item.estado,
+            zip: item.codigo_postal,
             fotoLocal: item.foto_local,
             imagenUbicacion: item.imagen_ubicacion,
           }));
@@ -69,7 +70,6 @@ export default {
   },
 };
 </script>
-
 
 <style scoped>
 .app-container {
@@ -92,11 +92,11 @@ h1 {
 .search-bar {
   display: flex;
   align-items: center;
-  background: white;
+  background: #fff;
   border-radius: 10px;
   padding: 3px 8px;
   box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
-  height: 38px; /* Compacto y alineado */
+  height: 38px;
 }
 
 .search-bar input {
@@ -111,7 +111,7 @@ h1 {
 .search-bar button {
   padding: 6px 15px;
   background-color: #00aaff;
-  color: white;
+  color: #fff;
   border-radius: 10px;
   border: none;
   cursor: pointer;

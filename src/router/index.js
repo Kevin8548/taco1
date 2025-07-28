@@ -5,7 +5,7 @@ import Cotizar from '../views/cotizar.vue'
 import Editar_Taco from '../views/edit_taco.vue'
 import Editar_Usuario from '../views/edit_usuario.vue'
 import Editar_Local from '../views/edit_local.vue'
-import Estado from '../views/estado.vue'
+import EstadoPedidos from '../views/estado.vue'
 import FormPedido from '../views/form_pedido.vue'
 import Inicio_Sesion from '../views/inicio_sesion.vue'
 import Locales from '../views/locales.vue'
@@ -18,17 +18,42 @@ import Registro from '../views/registro.vue'
 import Sabores from '../views/sabores.vue'
 import Usuario from '../views/usuario.vue'
 import comentarios from '../views/comentarios.vue'
+import tabla_pedidos from '../views/tabla_pedidos.vue'
+import EditarInicio from '../views/editar_inicio.vue'
+import Pago from '../views/pago.vue'
 
 const routes = [
+  // Ruta raíz: redirige a /inicio
+  { path: '/', redirect: '/inicio' },
+
+  // Pantalla de pago
+  {
+    path: '/pago',
+    name: 'Pago',
+    component: Pago,
+    props: route => ({
+      order: route.query.order
+        ? JSON.parse(route.query.order)
+        : null
+    })
+  },
+
+  // Otras rutas
   { path: '/inicio', component: Inicio },
   { path: '/carrito', component: Carrito },
   { path: '/cotizar', component: Cotizar },
   { path: '/sabores', component: Sabores },
   { path: '/editar-taco/:id', component: Editar_Taco, props: true },
   { path: '/editar-usuario/:id', component: Editar_Usuario, props: true },
-  { path: '/editar-Local/:id', component: Editar_Local, props: true },
-  { path: '/estado', component: Estado },
-  { path: '/form_pedido', component: FormPedido },
+  { path: '/editar-local/:id', component: Editar_Local, props: true },
+  { path: '/estado', component: EstadoPedidos },
+  { path: '/', redirect: '/form_pedido' },
+
+  { 
+    path: '/form_pedido', 
+    name: 'FormPedido', 
+    component: FormPedido 
+  },
   { path: '/inicio_sesion', component: Inicio_Sesion },
   { path: '/locales', component: Locales },
   { path: '/pedidos', component: Pedidos },
@@ -38,11 +63,18 @@ const routes = [
   { path: '/registrar_local', component: Registrar_Local },
   { path: '/registro', component: Registro },
   { path: '/usuario', component: Usuario },
-  { path: '/comentarios', component: comentarios },
+  {
+    path: '/locales/:id/comentarios',
+    name: 'Comentarios',
+    component: comentarios,
+    props: route => ({ localId: Number(route.params.id) })
+  },
+  { path: '/tabla_pedidos', component: tabla_pedidos },
+  { path: '/editar-inicio', component: EditarInicio }
 ]
 
 const router = createRouter({
-  history: createWebHashHistory(), // 👈 este es el cambio clave
+  history: createWebHashHistory(), 
   routes,
 })
 

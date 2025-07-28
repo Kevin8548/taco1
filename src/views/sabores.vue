@@ -1,4 +1,3 @@
-<!-- src/views/ListarSabores.vue -->
 <template>
   <div class="app-container">
     <header>
@@ -54,9 +53,7 @@ export default {
     filteredFoods() {
       const term = this.search.trim().toLowerCase();
       if (!term) return this.foods;
-      return this.foods.filter((f) =>
-        f.title.toLowerCase().includes(term)
-      );
+      return this.foods.filter((f) => f.title.toLowerCase().includes(term));
     },
   },
   methods: {
@@ -95,7 +92,6 @@ export default {
   },
 };
 </script>
-
 
 <style scoped>
 .app-container {
