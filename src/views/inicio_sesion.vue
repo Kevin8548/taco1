@@ -10,18 +10,25 @@
           <div class="form-container">
             <h2 class="title">Inicio de sesión</h2>
 
-            <label class="label" for="email">Correo electrónico</label>
+            <label class="label" for="correo_electronico">Correo electrónico</label>
             <input
-              id="email"
+              id="correo_electronico"
+              v-model="correo_electronico"
               type="email"
               placeholder="Correo electrónico"
               class="input"
             />
 
-            <label class="label" for="password">Contraseña</label>
-            <input id="password" type="password" placeholder="Contraseña" class="input" />
+            <label class="label" for="contrasena">Contraseña</label>
+            <input
+              id="contrasena"
+              v-model="contrasena"
+              type="password"
+              placeholder="Contraseña"
+              class="input"
+            />
 
-            <router-link to="/perfil" class="button primary"> Ingresar </router-link>
+            <button class="button primary" @click="login()">Ingresar</button>
 
             <div class="divider">
               <div class="line"></div>
@@ -29,7 +36,11 @@
               <div class="line"></div>
             </div>
 
-            <router-link to="/registro" class="button secondary">Registarse</router-link>
+            <router-link to="/reg_usuario" class="button secondary">
+              Registrarse
+            </router-link>
+
+            <p v-if="errorMessage" class="error-msg">{{ errorMessage }}</p>
           </div>
         </div>
       </div>
@@ -39,9 +50,63 @@
 
 <script>
 export default {
-  name: "Sabores",
+  name: "Login",
+  data() {
+    return {
+      correo_electronico: "",
+      contrasena: "",
+      errorMessage: "",
+    };
+  },
+  methods: {
+    async login() {
+      try {
+        const response = await fetch("/api/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            correo_electronico: this.correo_electronico,
+            contrasena: this.contrasena,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          // 1. Guardar usuario en localStorage
+          localStorage.setItem(
+            "currentUser",
+            JSON.stringify({
+              id: data.userId,
+              role: data.role,
+              nombre: data.nombre,
+            })
+          );
+
+          // 2. Determinar destino (redirect o perfil)
+          const destino = this.$route.query.redirect
+            ? this.$route.query.redirect
+            : { name: "Perfil", params: { id: data.userId } };
+
+          // 3. Navegar y recargar para actualizar la Navbar
+          this.$router
+            .push(destino)
+            .then(() => window.location.reload())
+            .catch((err) =>
+              console.error("Error durante la navegación:", err)
+            );
+        } else {
+          this.errorMessage = data.message || "Error al iniciar sesión";
+        }
+      } catch (error) {
+        this.errorMessage = "Error de red o del servidor";
+      }
+    },
+  },
 };
 </script>
+
+
 <style scoped>
 .container {
   display: flex;
@@ -118,7 +183,7 @@ export default {
 }
 
 .input::placeholder {
-  color: #e2f19e;
+  color: #c1c2be;
 }
 
 .button {

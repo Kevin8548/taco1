@@ -15,14 +15,24 @@
 
     <div class="campo campo-grande">
       <label>Descripción</label>
-      <input v-model="form.descripcion" type="text" placeholder="Ej. Dulce, picante y refrescante" />
+      <input
+        v-model="form.descripcion"
+        type="text"
+        placeholder="Ej. Dulce, picante y refrescante"
+      />
     </div>
 
     <div class="imagen-preview">
-      <label>Imagen del sabor</label>
-      <input type="file" accept="image/*" @change="onImageChange" />
-      <div v-if="previewUrl" class="preview">
-        <img :src="previewUrl" alt="Vista previa del sabor" />
+      <label>Imagen</label>
+      <div class="input-file">
+        <label class="input-file-label" for="imagen">🖼️Galería</label>
+        <input
+          type="file"
+          id="imagen"
+          @change="onFileChange"
+          accept="image/*"
+          class="file-input"
+        />
       </div>
     </div>
 
@@ -63,7 +73,11 @@ export default {
         this.form.imagen = null;
         if (this.previewUrl) URL.revokeObjectURL(this.previewUrl);
         this.previewUrl = null;
-        Swal.fire("Imagen inválida", "Por favor selecciona una imagen válida.", "warning");
+        Swal.fire(
+          "Imagen inválida",
+          "Por favor selecciona una imagen válida.",
+          "warning"
+        );
       }
     },
 
@@ -97,7 +111,11 @@ export default {
             .then((res) => res.json())
             .then((data) => {
               if (data.success) {
-                Swal.fire("¡Registrado con éxito!", "Sabor registrado exitosamente.", "success");
+                Swal.fire(
+                  "¡Registrado con éxito!",
+                  "Sabor registrado exitosamente.",
+                  "success"
+                );
                 this.resetForm();
               } else {
                 throw new Error("No se pudo registrar.");
@@ -129,8 +147,51 @@ export default {
 };
 </script>
 
-
 <style scoped>
+.input-file input[type="file"] {
+  display: none;
+}
+
+.campo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin: 5px 5px 10px -5px; /* reducido margen arriba y extendido a la izquierda */
+  width: 100%; /* aseguramos que ocupe todo el ancho disponible */
+}
+
+input[type="text"],
+input[type="file"] {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background-color: #e2dfdf;
+  font-size: 16px;
+}
+
+/* Estilo del botón de archivo personalizado */
+.input-file-label {
+  display: flex; /* para controlar alineación interna */
+  align-items: center; /* centra verticalmente */
+  justify-content: center; /* centra el ícono horizontalmente */
+  width: 100%; /* que ocupe todo el ancho disponible */
+  max-width: 100%; /* para no salirse */
+  padding: 12px 0; /* padding arriba/abajo, nada a los lados */
+  background-color: #eee;
+  border: 1px solid #bbb;
+  border-radius: 6px;
+  font-size: 20px; /* tamaño del ícono */
+  cursor: pointer;
+  margin-top: -1px;
+  margin-left: 0; /* quito margen izquierdo para que quede alineado */
+  box-sizing: border-box; /* para que padding y border no agranden el ancho */
+  transition: background-color 0.2s ease;
+}
+
+.input-file-label:hover {
+  background-color: #ddd;
+}
+
 .contenedor {
   max-width: 900px;
   margin: 30px auto;

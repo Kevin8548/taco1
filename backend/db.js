@@ -2,11 +2,13 @@
 const { Pool } = require('pg');
 
 const pool = new Pool({
-  user: 'postgres', // reemplaza con tu usuario real
+  user: 'first_tacos', // reemplaza con tu usuario real
   host: 'localhost',
   database: 'tacoscanasta', // reemplaza con el nombre real
-  password: 'k888',
+  password: 'tacosdecanasta2025',
   port: 5432,
 });
 
 module.exports = pool;
+
+

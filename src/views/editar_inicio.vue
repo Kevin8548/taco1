@@ -10,12 +10,22 @@
 
     <div class="campo">
       <label>Texto de Portada</label>
-      <input type="text" v-model="portada.texto" placeholder="Descripción breve de la portada" />
+      <input
+        type="text"
+        v-model="portada.texto"
+        placeholder="Descripción breve de la portada"
+      />
     </div>
 
     <div class="campo">
-      <label>Imagen de Portada</label>
-      <input type="file" accept="image/*" @change="onPortadaChange" />
+      <label class="input-file-label" for="imagenPortada">🖼️ Imagen de Portada</label>
+      <input
+        id="imagenPortada"
+        type="file"
+        accept="image/*"
+        @change="onPortadaChange"
+        style="display: none"
+      />
       <div class="preview" v-if="portadaPreviewUrl">
         <img :src="portadaPreviewUrl" alt="Vista previa portada" />
       </div>
@@ -64,7 +74,7 @@ onMounted(async () => {
     const data = await res.json();
 
     // Portada
-    const port = data.find(i => i.tipo === "portada");
+    const port = data.find((i) => i.tipo === "portada");
     if (port) {
       portada.value = { ...port };
       portadaPreviewUrl.value = port.imagen;
@@ -72,8 +82,8 @@ onMounted(async () => {
 
     // Galería
     let bloques = data
-      .filter(i => i.tipo === "galeria")
-      .map(b => ({ ...b, file: null, previewUrl: b.imagen || null }));
+      .filter((i) => i.tipo === "galeria")
+      .map((b) => ({ ...b, file: null, previewUrl: b.imagen || null }));
 
     while (bloques.length < 6) {
       bloques.push({
@@ -84,7 +94,7 @@ onMounted(async () => {
         imagen: "",
         orden: bloques.length + 1,
         file: null,
-        previewUrl: null
+        previewUrl: null,
       });
     }
 
@@ -115,7 +125,7 @@ function onGaleriaChange(e, index) {
 
 // File → Base64
 function fileToBase64(file) {
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     if (!file) return resolve(null);
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result);
@@ -134,8 +144,8 @@ async function guardarCambios() {
       body: JSON.stringify({
         titulo: portada.value.titulo,
         texto: portada.value.texto,
-        imagen: portadaB64 || portada.value.imagen
-      })
+        imagen: portadaB64 || portada.value.imagen,
+      }),
     });
 
     // Galería (PUT/POST)
@@ -150,8 +160,8 @@ async function guardarCambios() {
           body: JSON.stringify({
             titulo: item.titulo,
             texto: item.texto,
-            imagen: imgB64 || item.imagen
-          })
+            imagen: imgB64 || item.imagen,
+          }),
         });
       } else {
         const res = await fetch(`/api/contenido-inicio`, {
@@ -162,8 +172,8 @@ async function guardarCambios() {
             titulo: item.titulo,
             texto: item.texto,
             imagen: imgB64 || item.imagen,
-            orden: i + 1
-          })
+            orden: i + 1,
+          }),
         });
         const created = await res.json();
         item.id = created.id;
@@ -182,13 +192,57 @@ async function guardarCambios() {
 // Limpieza de URLs
 onBeforeUnmount(() => {
   if (portadaPreviewUrl.value) URL.revokeObjectURL(portadaPreviewUrl.value);
-  galeria.value.forEach(item => {
+  galeria.value.forEach((item) => {
     if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
   });
 });
 </script>
 
 <style scoped>
+.input-file input[type="file"] {
+  display: none;
+}
+
+.campo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin: 5px 5px 10px -5px; /* reducido margen arriba y extendido a la izquierda */
+  width: 100%; /* aseguramos que ocupe todo el ancho disponible */
+}
+
+input[type="text"],
+input[type="file"] {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background-color: #e2dfdf;
+  font-size: 16px;
+}
+
+/* Estilo del botón de archivo personalizado */
+.input-file-label {
+  display: flex; /* para controlar alineación interna */
+  align-items: center; /* centra verticalmente */
+  justify-content: center; /* centra el ícono horizontalmente */
+  width: 100%; /* que ocupe todo el ancho disponible */
+  max-width: 100%; /* para no salirse */
+  padding: 12px 0; /* padding arriba/abajo, nada a los lados */
+  background-color: #eee;
+  border: 1px solid #bbb;
+  border-radius: 6px;
+  font-size: 20px; /* tamaño del ícono */
+  cursor: pointer;
+  margin-top: -1px;
+  margin-left: 0; /* quito margen izquierdo para que quede alineado */
+  box-sizing: border-box; /* para que padding y border no agranden el ancho */
+  transition: background-color 0.2s ease;
+}
+
+.input-file-label:hover {
+  background-color: #ddd;
+}
+
 .contenedor {
   max-width: 900px;
   margin: 20px auto;

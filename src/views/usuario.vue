@@ -48,7 +48,7 @@
 </template>
 
 <script>
-import edit_usuario from './edit_usuario.vue';
+import Edit_usuario from './edit_usuario.vue';
 
 export default {
   data() {
@@ -88,9 +88,10 @@ export default {
       );
     },
     editar(id) {
-      this.$router.push(`/editar-usuario/${id}`);
+    // El name debe coincidir con el definido en router/index.js
+    this.$router.push({ name: 'EditarUsuario', params: { id } });
+  }
 
-    }
 
   },
   mounted() {

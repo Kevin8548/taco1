@@ -6,8 +6,12 @@
       <h2 class="section-title">{{ portada.titulo }}</h2>
       <img :src="portada.imagen" alt="Grupo con tacos de canasta" class="main-image" />
       <p class="section-text">{{ portada.texto }}</p>
-      <div class="edit-btn-container">
-        <router-link to="/editar-inicio" class="edit-btn">✏️ Editar contenido</router-link>
+
+      <!-- Botón condicional por rol -->
+      <div class="edit-btn-container" v-if="rolValido">
+        <router-link to="/editar_inicio" class="edit-btn"
+          >✏️ Editar contenido</router-link
+        >
       </div>
     </section>
 
@@ -30,21 +34,25 @@ export default {
       portada: {
         titulo: "Sabor que no se olvida",
         texto: "En Chiquihuitl Tacos llevamos la tradición en alto...",
-        imagen: "/img/tacostlaxcala.png"
+        imagen: "/img/tacostlaxcala.png",
       },
-      galeria: []
+      galeria: [],
     };
   },
   computed: {
+    rolValido() {
+      const rol = this.$route.params.rol;
+      return ["admin", "vendedor"].includes(rol);
+    },
     galeriaCompleta() {
       const defaultItem = {
         imagen: "/img/default.png",
-        texto: "Contenido pendiente..."
+        texto: "Contenido pendiente...",
       };
       const actual = [...this.galeria];
       while (actual.length < 6) actual.push({ ...defaultItem });
       return actual;
-    }
+    },
   },
   async mounted() {
     try {
@@ -56,7 +64,7 @@ export default {
     } catch (e) {
       console.error("Error al cargar contenido:", e);
     }
-  }
+  },
 };
 </script>
 

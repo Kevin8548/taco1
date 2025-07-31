@@ -16,11 +16,24 @@
     <div class="fila">
       <div class="campo campo-grande">
         <label>Descripción</label>
-        <input type="text" v-model="descripcion" placeholder="Escribe la descripción..." />
+        <input
+          type="text"
+          v-model="descripcion"
+          placeholder="Escribe la descripción..."
+        />
       </div>
       <div class="campo">
         <label>Imagen</label>
-        <input type="file" @change="onFileChange" accept="image/*" />
+        <div class="input-file">
+          <label class="input-file-label" for="imagen">🖼️Galería</label>
+          <input
+            type="file"
+            id="imagen"
+            @change="onFileChange"
+            accept="image/*"
+            class="file-input"
+          />
+        </div>
       </div>
     </div>
 
@@ -30,7 +43,9 @@
       </div>
       <div class="botones">
         <button class="editar" @click="() => showConfirmDialog('editar')">Editar</button>
-        <button class="eliminar" @click="() => showConfirmDialog('eliminar')">Eliminar</button>
+        <button class="eliminar" @click="() => showConfirmDialog('eliminar')">
+          Eliminar
+        </button>
       </div>
     </div>
   </div>
@@ -103,7 +118,14 @@ const showConfirmDialog = (action) => {
     },
   };
 
-  const { title, text, confirmButtonText, successTitle, successText, onConfirm } = opciones[action];
+  const {
+    title,
+    text,
+    confirmButtonText,
+    successTitle,
+    successText,
+    onConfirm,
+  } = opciones[action];
 
   Swal.fire({
     title,
@@ -164,8 +186,49 @@ onUnmounted(() => {
 });
 </script>
 
-
 <style scoped>
+.input-file input[type="file"] {
+  display: none;
+}
+
+.campo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin: 5px 5px 10px -5px; /* reducido margen arriba y extendido a la izquierda */
+  width: 100%; /* aseguramos que ocupe todo el ancho disponible */
+}
+
+input[type="text"],
+input[type="file"] {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background-color: #f9f9f9;
+  font-size: 16px;
+}
+
+/* Estilo del botón de archivo personalizado */
+.input-file-label {
+  display: block;
+  padding: 13px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background-color: #f9f9f9;
+  font-size: 16px;
+  font-family: inherit;
+  color: #333;
+  cursor: pointer;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0px 0 10px 0; /* mismo margen vertical que los otros campos */
+  text-align: left; /* alinea el texto como en los inputs */
+}
+
+.input-file-label:hover {
+  background-color: #ddd;
+}
+
 .contenedor {
   max-width: 950px;
   margin: 20px auto;

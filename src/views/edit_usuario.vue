@@ -45,15 +45,19 @@
           placeholder="Escribe tu número o correo..."
         />
       </div>
+
       <div class="campo">
         <label>Imagen</label>
-        <input
-          type="file"
-          id="imagen"
-          @change="onFileChange"
-          accept="image/*"
-          class="file-input"
-        />
+        <div class="input-file">
+          <label class="input-file-label" for="imagen">🖼️ Galería</label>
+          <input
+            type="file"
+            id="imagen"
+            @change="onFileChange"
+            accept="image/*"
+            class="file-input"
+          />
+        </div>
       </div>
     </div>
 
@@ -123,43 +127,29 @@ const form = reactive({
   foto_perfil: "",
 });
 
-const contrasenaOriginal = ref(""); // nueva variable para mantener la contraseña real
-
+const contrasenaOriginal = ref("");
 const previewUrl = ref(null);
 let objectUrl = null;
 let archivoSeleccionado = null;
 
 onMounted(async () => {
   const id = route.params.id;
-  console.log("ID recibido para editar:", id);
-
   try {
     const res = await fetch(`http://localhost:3000/api/usuarios/${id}`);
     if (!res.ok) throw new Error("Error al obtener datos");
-
     const data = await res.json();
-    console.log("Datos recibidos:", data);
 
+    // Rellenar formulario
     form.nombre = data.nombre || "";
     form.apellidos = data.apellidos || "";
     form.contacto = data.contacto || "";
     form.tipo_usuario = data.tipo_usuario || "";
     form.correo_electronico = data.correo_electronico || "";
-    form.contrasena = ""; // el input queda vacío
-    contrasenaOriginal.value = data.contrasena || ""; // pero se guarda aparte
+    form.contrasena = "";
+    contrasenaOriginal.value = data.contrasena || "";
 
     if (data.direccion) {
-      form.direccion.calle = data.direccion.calle || "";
-      form.direccion.ciudad = data.direccion.ciudad || "";
-      form.direccion.codigo_postal = data.direccion.codigo_postal || "";
-      form.direccion.estado_provincia_zona = data.direccion.estado_provincia_zona || "";
-      form.direccion.entre_calles = data.direccion.entre_calles || "";
-    } else {
-      form.direccion.calle = data.calle || "";
-      form.direccion.ciudad = data.ciudad || "";
-      form.direccion.codigo_postal = data.codigo_postal || "";
-      form.direccion.estado_provincia_zona = data.estado_provincia_zona || "";
-      form.direccion.entre_calles = data.entre_calles || "";
+      Object.assign(form.direccion, data.direccion);
     }
 
     form.foto_perfil = data.foto_perfil || "";
@@ -198,18 +188,22 @@ const convertirArchivoABase64 = (file) => {
 };
 
 const guardarCambios = async () => {
+  const confirmacion = await Swal.fire({
+    title: "¿Seguro que quieres editar?",
+    text: "Estás a punto de modificar los datos.",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Sí, editar",
+    cancelButtonText: "Cancelar",
+  });
+  if (!confirmacion.isConfirmed) return;
+
   try {
     const id = route.params.id;
-
     let foto = form.foto_perfil;
     if (archivoSeleccionado) {
       foto = await convertirArchivoABase64(archivoSeleccionado);
     }
-
-    // si el campo está vacío, se envía la contraseña original
-    const contrasenaFinal = form.contrasena.trim()
-      ? form.contrasena
-      : contrasenaOriginal.value;
 
     const usuarioActualizado = {
       nombre: form.nombre,
@@ -223,54 +217,109 @@ const guardarCambios = async () => {
       estado_provincia_zona: form.direccion.estado_provincia_zona,
       entre_calles: form.direccion.entre_calles,
       foto_perfil: foto,
-      contrasena: contrasenaFinal,
     };
+
+    if (form.contrasena.trim()) {
+      usuarioActualizado.contrasena = form.contrasena;
+    }
 
     const res = await fetch(`http://localhost:3000/api/usuarios/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(usuarioActualizado),
     });
-
     if (!res.ok) throw new Error("Error al actualizar");
 
-    Swal.fire("Éxito", "Usuario actualizado correctamente", "success");
-    router.push("/perfil");
+    await Swal.fire({
+      icon: "success",
+      title: "¡Editado!",
+      text: "Se han actualizado tus datos",
+    });
+
+    // REDIRECCIÓN AL LISTADO DE USUARIOS
+    router.push({ name: "Usuario" });
   } catch (error) {
     console.error(error);
     Swal.fire("Error", "No se pudo actualizar el usuario.", "error");
   }
 };
 
-const eliminarUsuario = () => {
-  Swal.fire({
+const eliminarUsuario = async () => {
+  const { isConfirmed } = await Swal.fire({
     title: "¿Seguro que quieres eliminar?",
     text: "Esta acción no se puede deshacer",
     icon: "warning",
     showCancelButton: true,
     confirmButtonText: "Sí, eliminar",
     cancelButtonText: "Cancelar",
-  }).then(async (result) => {
-    if (result.isConfirmed) {
-      try {
-        const id = route.params.id;
-        const res = await fetch(`http://localhost:3000/api/usuarios/${id}`, {
-          method: "DELETE",
-        });
-
-        if (!res.ok) throw new Error("Error al eliminar");
-
-        Swal.fire("Eliminado", "Usuario eliminado correctamente", "success");
-        router.push("/inicio_sesion");
-      } catch (error) {
-        Swal.fire("Error", "No se pudo eliminar el usuario", "error");
-      }
-    }
   });
+  if (!isConfirmed) return;
+
+  try {
+    const id = route.params.id;
+    const res = await fetch(`http://localhost:3000/api/usuarios/${id}`, {
+      method: "DELETE",
+    });
+    // parsear respuesta
+    const payload = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      console.error("Error backend elimina:", payload);
+      // mostrar mensaje específico o genérico
+      throw new Error(payload.error || payload.message || "Error al eliminar");
+    }
+
+    await Swal.fire("Eliminado", "Usuario eliminado correctamente", "success");
+    router.push({ name: "Usuario" });
+
+  } catch (err) {
+    console.error(err);
+    Swal.fire("Error", err.message, "error");
+  }
 };
 </script>
 
 <style scoped>
+.input-file input[type="file"] {
+  display: none;
+}
+
+.campo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin: 5px 5px 10px -5px; /* reducido margen arriba y extendido a la izquierda */
+  width: 100%; /* aseguramos que ocupe todo el ancho disponible */
+}
+
+input[type="text"],
+input[type="file"] {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background-color: #f9f9f9;
+  font-size: 16px;
+}
+
+/* Estilo del botón de archivo personalizado */
+.input-file-label {
+  display: inline-block;
+  padding: 12px 250px 12px 130px;
+  background-color: #eee;
+  border: 1px solid #bbb;
+  border-radius: 6px;
+  font-size: 15px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  width: fit-content;
+  margin-top: -1px; /* sube el botón */
+  margin-left: -5px; /* mueve un poco a la izquierda */
+}
+
+.input-file-label:hover {
+  background-color: #ddd;
+}
+
 .contenedor {
   max-width: 1000px;
   margin: 20px auto;

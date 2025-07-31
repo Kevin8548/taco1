@@ -9,7 +9,11 @@
       </div>
       <div class="campo campo-grande">
         <label>Descripción</label>
-        <input type="text" v-model="descripcion" placeholder="Breve descripción del local..." />
+        <input
+          type="text"
+          v-model="descripcion"
+          placeholder="Breve descripción del local..."
+        />
       </div>
     </div>
 
@@ -48,16 +52,28 @@
 
     <div class="imagenes">
       <div class="imagen-preview">
-        <label>Imagen de Ubicación</label>
-        <input type="file" accept="image/*" @change="onUbicacionChange" />
+        <label for="ubicacionFile" class="input-file-label">🗺️Galería Ubicación</label>
+        <input
+          id="ubicacionFile"
+          type="file"
+          accept="image/*"
+          @change="onUbicacionChange"
+          style="display: none"
+        />
         <div class="preview" v-if="ubicacionPreviewUrl">
           <img :src="ubicacionPreviewUrl" alt="Vista previa ubicación" />
         </div>
       </div>
 
       <div class="imagen-preview">
-        <label>Imagen del Local</label>
-        <input type="file" accept="image/*" @change="onLocalChange" />
+        <label for="localFile" class="input-file-label">🖼️Galería Local</label>
+        <input
+          id="localFile"
+          type="file"
+          accept="image/*"
+          @change="onLocalChange"
+          style="display: none"
+        />
         <div class="preview" v-if="localPreviewUrl">
           <img :src="localPreviewUrl" alt="Vista previa local" />
         </div>
@@ -157,7 +173,11 @@ export default {
         const result = await res.json();
 
         if (result.success) {
-          Swal.fire("¡Registrado!", "El local se ha registrado correctamente.", "success");
+          Swal.fire(
+            "¡Registrado!",
+            "El local se ha registrado correctamente.",
+            "success"
+          );
           this.resetForm();
         } else {
           throw new Error(result.error || "No se pudo registrar el local.");
@@ -198,6 +218,48 @@ export default {
 </script>
 
 <style scoped>
+.input-file input[type="file"] {
+  display: none;
+}
+
+.campo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin: 5px 5px 10px -5px; /* reducido margen arriba y extendido a la izquierda */
+  width: 100%; /* aseguramos que ocupe todo el ancho disponible */
+}
+
+input[type="text"],
+input[type="file"] {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background-color: #f9f9f9;
+  font-size: 16px;
+}
+
+/* Estilo del botón de archivo personalizado */
+.input-file-label {
+  display: block;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background-color: #f9f9f9;
+  font-size: 16px;
+  font-family: inherit;
+  color: #333;
+  cursor: pointer;
+  width: 100%;
+  box-sizing: border-box;
+  transition: background-color 0.2s ease;
+  margin: 5px 0 10px 0; /* mismo margen que los inputs de texto */
+}
+
+.input-file-label:hover {
+  background-color: #ddd;
+}
+
 .contenedor {
   max-width: 950px;
   margin: 20px auto;

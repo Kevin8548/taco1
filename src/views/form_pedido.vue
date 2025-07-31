@@ -76,16 +76,17 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useCarritoStore } from '../stores/carrito'
-import { useOrderStore }   from '../stores/orderStore'
-import Swal                from 'sweetalert2'
-import { useRouter }       from 'vue-router'
+import { useOrderStore } from '../stores/orderStore'
+import Swal from 'sweetalert2'
 
+const route      = useRoute()
 const router     = useRouter()
 const carrito    = useCarritoStore()
 const orderStore = useOrderStore()
 
-// Campos v-model
+// Campos v-model...
 const nombre   = ref('')
 const telefono = ref('')
 const correo   = ref('')
@@ -98,24 +99,26 @@ const calles   = ref('')
 const fecha    = ref('')
 const hora     = ref('')
 
-const onConfirm = async () => {
+// **Leemos el id del cliente** desde la URL: /form_pedido/:id
+const userId = Number(route.params.id)
+
+async function onConfirm() {
   const { isConfirmed } = await Swal.fire({
     title: '¿Confirmar pedido?',
-    text: 'Se enviará tu pedido con los datos proporcionados.',
+    text: 'Se enviará tu pedido con estos datos.',
     icon: 'question',
     showCancelButton: true,
     confirmButtonText: 'Sí, enviar'
   })
   if (!isConfirmed) return
 
-  // Construir productos
+  // Armamos array de productos y calculamos total
   const productos = carrito.items.map(i => ({ id_taco: i.id, cantidad: i.qty }))
+  const total     = carrito.items.reduce((sum,i) => sum + (i.precio||0)*i.qty, 0)
 
-  // Calcular total usando i.precio
-  const total = carrito.items.reduce((sum, i) => sum + (i.precio ?? 0) * i.qty, 0)
-
+  // **Usamos userId** como id_cliente
   const payload = {
-    id_cliente:    3,
+    id_cliente:    userId,
     nombre:        nombre.value,
     telefono:      telefono.value,
     correo:        correo.value,
@@ -134,7 +137,7 @@ const onConfirm = async () => {
   }
 
   try {
-    const res  = await fetch('http://localhost:3000/api/pedido', {
+    const res  = await fetch('/api/pedido', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -144,7 +147,7 @@ const onConfirm = async () => {
 
     await Swal.fire('¡Éxito!', 'Tu pedido fue enviado.', 'success')
 
-    // Guardar orden y navegar
+    // Guardar para pago y vaciar carrito
     orderStore.setOrder({ id: data.id_pedido, name: nombre.value, total })
     carrito.vaciarCarrito()
     router.push({ name: 'Pago' })
@@ -153,6 +156,8 @@ const onConfirm = async () => {
   }
 }
 </script>
+
+
 
 
 

@@ -1,11 +1,19 @@
 <template>
-  <div class="local-card" :class="{ orange: isHighlighted, yellow: !isHighlighted }">
-    <img :src="fotoLocalSrc" alt="Foto del local" class="local-img" />
+  <div
+    class="local-card"
+    :class="{ orange: isHighlighted, yellow: !isHighlighted }"
+  >
+    <img
+      :src="fotoLocalSrc"
+      alt="Foto del local"
+      class="local-img"
+    />
 
     <h3>{{ local.title }}</h3>
 
     <p class="local-address">
-      {{ local.street }}, {{ local.neighborhood }}, {{ local.city }}, {{ local.state }} - CP {{ local.zip }}
+      {{ local.street }}, {{ local.neighborhood }}, {{ local.city }},
+      {{ local.state }} – CP {{ local.zip }}
     </p>
 
     <p class="local-description">{{ local.description }}</p>
@@ -18,13 +26,20 @@
     />
 
     <div class="buttons">
-      <router-link :to="`/editar-local/${local.id}`">
+      <!-- Solo usuarios con rol válido ven el botón de Editar -->
+      <router-link
+        v-if="rolValido"
+        :to="`/editar-local/${local.id}`"
+      >
         <button>Editar</button>
       </router-link>
-      <router-link :to="`/locales/${local.id}/comentarios`">
-     <button>Comentarios</button>
-   </router-link>
 
+      <!-- Comentarios siempre visible -->
+      <router-link
+        :to="`/locales/${local.id}/comentarios`"
+      >
+        <button>Comentarios</button>
+      </router-link>
     </div>
   </div>
 </template>
@@ -52,6 +67,10 @@ export default {
       return b64.startsWith("data:image")
         ? b64
         : `data:image/jpeg;base64,${b64}`;
+    },
+    rolValido() {
+      const rol = this.$route.params.rol;
+      return ["admin", "vendedor"].includes(rol);
     },
   },
 };

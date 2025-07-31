@@ -88,7 +88,11 @@ app.get("/api/locales/:localId/comentarios", async (req, res) => {
   const { localId } = req.params;
   try {
     const result = await pool.query(
-      "SELECT * FROM comentarios WHERE local_id = $1 ORDER BY created_at DESC",
+      `SELECT c.*, l.nombre_local AS local_nombre
+       FROM comentarios c
+       JOIN locales l ON l.id = c.local_id
+       WHERE c.local_id = $1
+       ORDER BY c.created_at DESC`,
       [localId]
     );
     res.json(result.rows);
@@ -116,13 +120,27 @@ app.post("/api/locales/:localId/comentarios", async (req, res) => {
 });
 
 // 🔹 Eliminar comentario por ID
-app.delete("/api/comentarios/:id", async (req, res) => {
+app.delete('/api/comentarios/:id', async (req, res) => {
   const { id } = req.params;
+  const userId = Number(req.headers['x-user-id']);
+  const role   = req.headers['x-user-role'];
+
   try {
-    await pool.query("DELETE FROM comentarios WHERE id = $1", [id]);
+    const { rows } = await pool.query(
+      'SELECT usuario_id FROM comentarios WHERE id=$1',
+      [id]
+    );
+    if (!rows.length) return res.status(404).end();
+
+    const ownerId = rows[0].usuario_id;
+    if (role !== 'admin' && userId !== ownerId) {
+      return res.status(403).json({ error: 'Sin permiso' });
+    }
+
+    await pool.query('DELETE FROM comentarios WHERE id=$1', [id]);
     res.status(204).end();
   } catch (err) {
-    console.error("Error al eliminar comentario:", err.message);
+    console.error(err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -164,13 +182,20 @@ app.get('/api/contenido-inicio', async (req, res) => {
 // —————————————————————————————————————————————————————————————
 app.get('/api/sabores', async (req, res) => {
   try {
-    const { rows } = await pool.query(
-      'SELECT id, sabor, imagen FROM taco ORDER BY sabor'
-    )
+    const { rows } = await pool.query(`
+      SELECT
+        id,
+        sabor   AS label,
+        precio,
+        imagen
+      FROM taco
+      ORDER BY sabor
+    `)
+    console.log('[GET /api/sabores] →', rows)  // debe salir con precio e imagen
     res.json(rows)
   } catch (err) {
     console.error('Error al obtener sabores:', err)
-    res.status(500).json({ error: 'Error al obtener sabores' })
+    res.status(500).json({ error: 'Error al obtener sabores.' })
   }
 })
 
@@ -344,65 +369,78 @@ app.get('/api/pedidos', async (req, res) => {
 // GET /api/pedidos/full
 // Pedidos completos con items (incluye imagen), estado y ubicación
 // —————————————————————————————————————————————————————————————
-app.get('/api/pedidos/full', async (req, res) => {
+async function fullPedidosHandler(req, res) {
+  const { rol, id } = req.params  // `nombre` llega pero no se usa
   try {
-    const { rows } = await pool.query(`
+    // Base del SELECT con vendedor y orden por ID ascendente
+    let query = `
       SELECT
-        p.id AS id_pedido,
-
-        -- Agrupamos los ítems en un array, filtrando nulos
+        p.id               AS id_pedido,
+        ep.nombre          AS estado_envio,
+        p.nombre_cliente   AS cliente,
+        -- Vendedor asignado, si existe
+        COALESCE(u.nombre || ' ' || u.apellidos, '') AS vendedor,
+        p.telefono         AS telefono_cliente,
+        TO_CHAR(p.fecha,'YYYY-MM-DD HH24:MI') AS fecha_hora,
+        CONCAT_WS(', ',
+          p.direccion_calle,
+          p.direccion_colonia,
+          'CP ' || p.direccion_cp,
+          p.direccion_ciudad,
+          p.direccion_estado
+        ) AS ubicacion,
         COALESCE(
           json_agg(
             json_build_object(
               'sabor',    t.sabor,
-              'precio',   t.precio,
-              'imagen',   t.imagen,
-              'cantidad', pd.cantidad,
-              'subtotal', t.precio * pd.cantidad
+              'cantidad', pt.cantidad
             )
-          ) FILTER (WHERE pd.fk_taco IS NOT NULL),
+          ) FILTER (WHERE pt.fk_taco IS NOT NULL),
           '[]'
         ) AS items,
-
-        ep.nombre           AS estado_envio,
-        p.nombre_cliente    AS cliente,
-        p.telefono          AS telefono_cliente,
-        TO_CHAR(p.fecha,'YYYY-MM-DD HH24:MI') AS fecha_hora,
-
-        -- Construimos ubicación con saltos de línea
-        CONCAT_WS(
-          E',\n',
-          p.direccion_calle,
-          p.direccion_colonia,
-          p.direccion_ciudad,
-          p.direccion_estado
-        ) || E'\nCP ' || p.direccion_cp AS ubicacion,
-
         p.total
-
       FROM pedido p
-
-      LEFT JOIN pedido_taco pd   ON pd.fk_pedido = p.id
-      LEFT JOIN taco t           ON t.id        = pd.fk_taco
+      LEFT JOIN pedido_taco pt   ON pt.fk_pedido = p.id
+      LEFT JOIN taco t           ON t.id        = pt.fk_taco
       LEFT JOIN estado_pedido ep ON ep.id       = p.estado_id
+      -- LEFT JOIN a usuario y asignaciones para obtener vendedor
+      LEFT JOIN asignaciones a   ON a.pedido_id = p.id
+      LEFT JOIN usuario u        ON a.trabajador = u.nombre || ' ' || u.apellidos
+    `
 
-      GROUP BY
-        p.id, ep.nombre,
-        p.nombre_cliente, p.telefono,
-        p.fecha, p.direccion_calle,
-        p.direccion_colonia, p.direccion_ciudad,
-        p.direccion_estado, p.direccion_cp,
-        p.total
+    const condiciones = []
+    const valores     = []
 
-      ORDER BY p.fecha DESC
-    `);
+    if (rol === 'cliente') {
+      condiciones.push('p.fk_cliente = $1')
+      valores.push(Number(id))
+    }
+    else if (rol === 'vendedor') {
+      // filtrar por id de vendedor
+      condiciones.push('u.id = $1')
+      valores.push(Number(id))
+    }
+    // admin: sin condiciones
 
-    res.json(rows);
+    if (condiciones.length) {
+      query += ' WHERE ' + condiciones.join(' AND ')
+    }
+    // ordenar por id ascendente
+    query += ' GROUP BY p.id, ep.nombre, u.nombre, u.apellidos ORDER BY p.id ASC'
+
+    const { rows } = await pool.query(query, valores)
+    res.json(rows)
   } catch (err) {
-    console.error('Error al obtener pedidos completos:', err.message);
-    res.status(500).json({ error: err.message });
+    console.error('Error al obtener pedidos full:', err)
+    res.status(500).json({ error: 'Error al obtener pedidos' })
   }
-});
+}
+
+// Rutas: opcional nombre al final
+app.get('/api/pedidos/full/:rol/:id', fullPedidosHandler)
+app.get('/api/pedidos/full/:rol/:id/:nombre', fullPedidosHandler)
+
+
 
 // —————————————————————————————————————————————————————————————
 // GET /api/pedidos/:id
@@ -621,7 +659,7 @@ app.post('/api/pedidos/confirmar/:id', async (req, res) => {
 
     await client.query(
       `UPDATE pedido
-         SET estado_id = 3
+         SET estado_id = 1
        WHERE id = $1`,
       [id]
     );
@@ -687,22 +725,38 @@ app.get('/api/asignaciones', async (req, res) => {
   }
 });
 
+// GET /api/pedidos/vendedor/:id
+app.get('/api/pedidos/vendedor/:id', async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  console.log('Buscando pedidos asignados para vendedor con id =', id);
+
+  try {
+    const sql = `
+      SELECT
+        p.id, p.nombre_cliente, p.estado_id,
+        p.direccion_calle, p.direccion_colonia, p.direccion_ciudad, p.direccion_cp,
+        p.telefono, p.fecha, p.total
+      FROM asignaciones a
+      JOIN pedido p ON a.pedido_id = p.id
+      JOIN usuario u ON a.trabajador = u.nombre || ' ' || u.apellidos
+      WHERE u.id = $1
+        AND a.confirmado = true
+    `;
+    const { rows } = await pool.query(sql, [id]);
+    console.log('Pedidos encontrados:', rows);
+    return res.json(rows);
+  } catch (err) {
+    console.error('Error fetching pedidos asignados:', err);
+    return res.status(500).json({ error: err.message });
+  }
+});
 
 
 
 
 // Listar solo sabores y precios (Cotizar)
-app.get('/api/sabores', async (req, res) => {
-  try {
-    const result = await pool.query(
-      'SELECT sabor AS label, precio FROM taco ORDER BY sabor'
-    );
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error al obtener sabores:', error);
-    res.status(500).json({ error: 'Error al obtener sabores.' });
-  }
-});
+// server.js (solo UNA vez app.get('/api/sabores'))
+
 
 
 // Listar tacos
@@ -958,37 +1012,66 @@ app.delete("/api/locales/:id", async (req, res) => {
 
 
 // 🔐 Login
-app.post("/api/login", async (req, res) => {
+app.post('/api/login', async (req, res) => {
   const { correo_electronico, contrasena } = req.body;
-  console.log("Intento de login:", correo_electronico);
-
   try {
-    const result = await pool.query(
-      "SELECT * FROM usuario WHERE correo_electronico = $1",
+    // Traemos solo los datos necesarios (sin la contraseña)
+    const { rows } = await pool.query(
+      'SELECT id, nombre, apellidos, tipo_usuario FROM usuario WHERE correo_electronico = $1',
       [correo_electronico]
     );
-    if (result.rows.length === 0) {
-      return res.status(401).json({ message: "Correo no encontrado" });
+    if (rows.length === 0) {
+      return res.status(401).json({ message: 'Correo no encontrado' });
     }
 
-    const user = result.rows[0];
-    const passwordMatch = await bcrypt.compare(contrasena, user.contrasena);
-    if (!passwordMatch) {
-      return res.status(401).json({ message: "Contraseña incorrecta" });
+    const user = rows[0];
+    // Ahora traemos el hash
+    const { rows: pwRows } = await pool.query(
+      'SELECT contrasena FROM usuario WHERE id = $1',
+      [user.id]
+    );
+    const hash = pwRows[0].contrasena;
+    const match = await bcrypt.compare(contrasena, hash);
+    if (!match) {
+      return res.status(401).json({ message: 'Contraseña incorrecta' });
     }
 
-    res.status(200).json({
-      message: "Inicio de sesión exitoso",
+    // Ésta es la respuesta completa que el front espera
+    res.json({
+      message: 'Inicio de sesión exitoso',
       userId: user.id,
+      role: user.tipo_usuario,
+      nombre: `${user.nombre} ${user.apellidos}`
     });
-  } catch (error) {
-    console.error("Error al iniciar sesión:", error);
-    res.status(500).json({ message: "Error en el servidor" });
+  } catch (err) {
+    console.error('Error al iniciar sesión:', err);
+    res.status(500).json({ message: 'Error en el servidor' });
   }
 });
 
-// Registrar usuario
-app.post("/api/usuarios", async (req, res) => {
+
+app.post('/api/tacos', async (req, res) => {
+  const { sabor, precio, descripcion } = req.body;
+  console.log('Datos recibidos:', req.body);
+
+  try {
+    const query = `
+      INSERT INTO taco (sabor, precio, descripcion, fk_local)
+      VALUES ($1, $2, $3, $4)
+      RETURNING *;
+    `;
+    const values = [sabor, precio, descripcion, 1]; 
+
+    const result = await pool.query(query, values);
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    console.error('Error al insertar taco:', error);
+    res.status(500).json({ success: false, error: 'Error al insertar taco.' });
+  }
+});
+
+// Ruta usuarios (foto_perfil opcional)
+app.post('/api/usuarios', async (req, res) => {
   const {
     nombre,
     apellidos,
@@ -1001,84 +1084,96 @@ app.post("/api/usuarios", async (req, res) => {
     contrasena,
     estado_provincia_zona,
     entre_calles,
-    foto_perfil = null,
+    foto_perfil = null,  
   } = req.body;
-  console.log("Datos recibidos usuario:", req.body);
+
+  console.log('Datos recibidos usuario:', req.body);
 
   try {
-    const hashedPassword = await bcrypt.hash(contrasena, 10);
+        const hashedPassword = await bcrypt.hash(contrasena, 10);
     const query = `
       INSERT INTO usuario (
         nombre, apellidos, contacto, tipo_usuario, calle,
         ciudad, codigo_postal, correo_electronico, contrasena,
         estado_provincia_zona, entre_calles, foto_perfil
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
       RETURNING *;
     `;
+
     const values = [
-      nombre,
-      apellidos,
-      contacto,
-      tipo_usuario,
-      calle,
-      ciudad,
-      codigo_postal,
-      correo_electronico,
-      hashedPassword,
-      estado_provincia_zona,
-      entre_calles,
-      foto_perfil,
-    ];
+    nombre, apellidos, contacto, tipo_usuario, calle,
+    ciudad, codigo_postal, correo_electronico, hashedPassword,
+    estado_provincia_zona, entre_calles, foto_perfil
+  ];
+
     const result = await pool.query(query, values);
     res.json({ success: true, usuario: result.rows[0] });
   } catch (error) {
-    console.error("Error al registrar usuario:", error);
-    res.status(500).json({ success: false, error: "Hubo un problema al registrar el usuario." });
+    console.error('Error al registrar usuario:', error.message);
+    res.status(500).json({ success: false, error: 'Hubo un problema al registrar el usuario.' });
   }
 });
 
-// Listar usuarios (resumen)
-app.get("/api/usuarios", async (req, res) => {
+app.get('/api/usuarios', async (req, res) => {
   try {
-    const result = await pool.query(`
-      SELECT id, nombre, correo_electronico, contacto,
-             ciudad, tipo_usuario, foto_perfil
+    // Selecciona solo las columnas que quieres
+    const resultado = await pool.query(`
+      SELECT 
+        id, 
+        nombre, 
+        correo_electronico, 
+        contacto, 
+        ciudad, 
+        tipo_usuario, 
+        foto_perfil 
       FROM usuario
     `);
-    res.json(result.rows);
+
+    res.json(resultado.rows);
   } catch (error) {
-    console.error("Error consultando usuarios:", error);
-    res.status(500).json({ error: "Error al obtener usuarios" });
+    console.error('Error consultando usuarios:', error);
+    res.status(500).json({ error: 'Error al obtener usuarios' });
   }
 });
 
-// Obtener usuario por ID (detalle completo)
-app.get("/api/usuarios/:id", async (req, res) => {
-  const { id } = req.params;
+
+// Obtener usuario por ID (todos los campos para editar)
+app.get('/api/usuarios/:id', async (req, res) => {
+  const id = req.params.id;
   try {
-    const result = await pool.query(
-      `
-      SELECT
-        id, nombre, apellidos, contacto, tipo_usuario,
-        calle, ciudad, codigo_postal, correo_electronico,
-        contrasena, estado_provincia_zona, entre_calles, foto_perfil
-      FROM usuario
-      WHERE id = $1
-      `,
+    const resultado = await pool.query(
+      `SELECT
+         id,
+         nombre,
+         apellidos,
+         contacto,
+         tipo_usuario,
+         calle,
+         ciudad,
+         codigo_postal,
+         correo_electronico,
+         contrasena,
+         estado_provincia_zona,
+         entre_calles,
+         foto_perfil
+       FROM usuario
+       WHERE id = $1`,
       [id]
     );
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Usuario no encontrado" });
+    if (resultado.rows.length === 0) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
     }
-    res.json(result.rows[0]);
+    res.json(resultado.rows[0]);
   } catch (error) {
-    console.error("Error consultando usuario:", error);
-    res.status(500).json({ error: "Error al obtener usuario" });
+    console.error('Error consultando usuario:', error);
+    res.status(500).json({ error: 'Error al obtener usuario' });
   }
 });
 
+
 // Actualizar usuario
-app.put("/api/usuarios/:id", async (req, res) => {
+app.put('/api/usuarios/:id', async (req, res) => {
   const { id } = req.params;
   const {
     nombre,
@@ -1089,12 +1184,11 @@ app.put("/api/usuarios/:id", async (req, res) => {
     ciudad,
     codigo_postal,
     correo_electronico,
-    contrasena,
+    contrasena, // puede venir vacío
     estado_provincia_zona,
     entre_calles,
-    foto_perfil,
+    foto_perfil
   } = req.body;
-  console.log("Datos actualización usuario:", req.body);
 
   try {
     let query = `
@@ -1110,12 +1204,14 @@ app.put("/api/usuarios/:id", async (req, res) => {
         estado_provincia_zona = $9,
         entre_calles = $10,
         foto_perfil = $11`;
+
     const values = [
       nombre, apellidos, contacto, tipo_usuario, calle,
       ciudad, codigo_postal, correo_electronico,
       estado_provincia_zona, entre_calles, foto_perfil
     ];
 
+    // Solo actualizamos la contraseña si viene y no está vacía
     if (contrasena && contrasena.trim() !== "") {
       const hashedPassword = await bcrypt.hash(contrasena, 10);
       query += `, contrasena = $12 WHERE id = $13 RETURNING *;`;
@@ -1126,33 +1222,53 @@ app.put("/api/usuarios/:id", async (req, res) => {
     }
 
     const result = await pool.query(query, values);
+
     if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, message: "Usuario no encontrado" });
+      return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
     }
+
     res.json({ success: true, usuario: result.rows[0] });
   } catch (error) {
-    console.error("Error al actualizar usuario:", error);
-    res.status(500).json({ success: false, error: "Error al actualizar usuario" });
+    console.error('Error al actualizar usuario:', error);
+    res.status(500).json({ success: false, error: 'Error al actualizar usuario' });
+  }
+});
+// Eliminar usuario
+app.delete('/api/usuarios/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // Iniciamos transacción
+    await pool.query('BEGIN');
+
+    // 1) Borrar todos los pedidos de ese cliente
+    await pool.query('DELETE FROM pedido WHERE cliente = $1;', [id]);
+
+    // 2) Borrar el usuario
+    const result = await pool.query(
+      'DELETE FROM usuario WHERE id = $1 RETURNING *;',
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      // Si el usuario no existe, revertimos y devolvemos 404
+      await pool.query('ROLLBACK');
+      return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+    }
+
+    // Confirmamos todos los cambios
+    await pool.query('COMMIT');
+    return res.json({ success: true, message: 'Usuario y pedidos eliminados' });
+
+  } catch (error) {
+    // Si algo sale mal, revertimos la transacción
+    await pool.query('ROLLBACK');
+    console.error('Error al eliminar usuario y pedidos:', error);
+    return res.status(500).json({ success: false, error: 'Error al eliminar usuario' });
   }
 });
 
-// Eliminar usuario
-app.delete("/api/usuarios/:id", async (req, res) => {
-  const { id } = req.params;
-  try {
-    const result = await pool.query(
-      "DELETE FROM usuario WHERE id = $1 RETURNING *;",
-      [id]
-    );
-    if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, message: "Usuario no encontrado" });
-    }
-    res.json({ success: true, message: "Usuario eliminado correctamente" });
-  } catch (error) {
-    console.error("Error al eliminar usuario:", error);
-    res.status(500).json({ success: false, error: "Error al eliminar usuario" });
-  }
-});
+
 
 app.listen(3000, () => {
   console.log("Servidor backend en http://localhost:3000");

@@ -1,16 +1,14 @@
 <template>
   <div class="tabla-pedidos">
-    <header class="tabla-header">
-      <h2>Lista de Pedidos</h2>
-      <div class="search-bar">
-        <input
-          v-model="busqueda"
-          type="text"
-          placeholder="Buscar por ID o Cliente"
-          aria-label="Buscar pedidos"
-        />
-      </div>
-    </header>
+    <h2>Lista de Pedidos</h2>
+    <div class="search-bar">
+      <input
+        v-model="busqueda"
+        type="text"
+        placeholder="Buscar por ID o Cliente"
+        aria-label="Buscar pedidos"
+      />
+    </div>
 
     <div v-if="loading" class="p-4">Cargando pedidos…</div>
     <div v-else-if="error" class="p-4 text-red-600">{{ error }}</div>
@@ -21,11 +19,12 @@
           <tr>
             <th>ID</th>
             <th>Sabores</th>
-            <th>Cantidades</th>
-            <th>Estado envío</th>
+            <th>Cant.</th>
+            <th>Estado</th>
             <th>Cliente</th>
+            <th>Vendedor</th>
             <th>Teléfono</th>
-            <th>Fecha y Hora</th>
+            <th>Fecha</th>
             <th>Ubicación</th>
             <th>Total</th>
           </tr>
@@ -34,22 +33,25 @@
           <tr v-for="p in pedidosFiltrados" :key="p.id_pedido">
             <td>#{{ p.id_pedido }}</td>
             <td>
-              <div v-for="(item, i) in p.items" :key="i" class="sabor-item">{{ item.sabor }}</div>
+              <div v-for="(item, i) in p.items" :key="i" class="sabor-item">
+                {{ item.sabor }}
+              </div>
             </td>
             <td>
-              <div v-for="(item, i) in p.items" :key="i" class="cantidad-item">{{ item.cantidad }}</div>
+              <div v-for="(item, i) in p.items" :key="i" class="cantidad-item">
+                {{ item.cantidad }}
+              </div>
             </td>
             <td>{{ p.estado_envio }}</td>
             <td>{{ p.cliente }}</td>
+            <td>{{ p.vendedor || '–' }}</td>
             <td>{{ p.telefono_cliente }}</td>
             <td>{{ p.fecha_hora }}</td>
-            <td class="ubicacion-cell">
-              <pre>{{ formatUbicacion(p.ubicacion) }}</pre>
-            </td>
+            <td class="ubicacion-cell"><pre>{{ formatUbicacion(p.ubicacion) }}</pre></td>
             <td>{{ p.total != null ? '$' + p.total.toFixed(2) : '–' }}</td>
           </tr>
           <tr v-if="!pedidosFiltrados.length && !loading">
-            <td class="center" colspan="9">No hay resultados para "{{ busqueda }}".</td>
+            <td colspan="10" class="center">No hay resultados para "{{ busqueda }}".</td>
           </tr>
         </tbody>
       </table>
@@ -59,17 +61,26 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
+import { useRoute } from 'vue-router'
 
-const pedidos = ref([])
+const route  = useRoute()
+const rol    = route.params.rol
+const userId = route.params.id
+
+const pedidos  = ref([])
 const busqueda = ref('')
-const loading = ref(false)
-const error = ref(null)
+const loading  = ref(false)
+const error    = ref(null)
 
 async function fetchPedidos() {
   loading.value = true
-  error.value = null
+  error.value   = null
   try {
-    const res = await fetch('http://localhost:3000/api/pedidos/full')
+    const ruta = route.params.nombre
+      ? `/api/pedidos/full/${rol}/${userId}/${encodeURIComponent(route.params.nombre)}`
+      : `/api/pedidos/full/${rol}/${userId}`
+
+    const res = await fetch(ruta)
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
     pedidos.value = await res.json()
   } catch (e) {
@@ -79,19 +90,17 @@ async function fetchPedidos() {
   }
 }
 
-function formatUbicacion(ubicacion) {
-  if (!ubicacion) return '–'
-  return ubicacion.replace(/, /g, '\n').replace(/\sCP\s/, '\nCP ')
+function formatUbicacion(u) {
+  return u ? u.replace(/, /g, '\n').replace(/\sCP\s/, '\nCP ') : '–'
 }
 
 const pedidosFiltrados = computed(() => {
-  const term = busqueda.value.trim().toLowerCase()
-  if (!term) return pedidos.value
-  return pedidos.value.filter(p => {
-    const cliente = p.cliente ?? ''
-    const id = String(p.id_pedido ?? '')
-    return id.includes(term) || cliente.toLowerCase().includes(term)
-  })
+  const t = busqueda.value.trim().toLowerCase()
+  if (!t) return pedidos.value
+  return pedidos.value.filter(p =>
+    p.id_pedido.toString().includes(t) ||
+    p.cliente.toLowerCase().includes(t)
+  )
 })
 
 onMounted(fetchPedidos)

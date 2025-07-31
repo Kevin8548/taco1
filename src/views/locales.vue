@@ -2,10 +2,13 @@
   <div class="app-container">
     <header>
       <h1>Locales</h1>
+
       <div class="search-bar">
         <input v-model="search" placeholder="Buscar..." />
         <button @click="searchLocales">Buscar</button>
-        <router-link to="/registrar_local">
+
+        <!-- Botón visible solo si el rol en la URL es válido -->
+        <router-link v-if="rolValido" to="/registrar_local">
           <button>Registrar Nuevo</button>
         </router-link>
       </div>
@@ -31,7 +34,7 @@ export default {
   data() {
     return {
       search: "",
-      locales: [],
+      locales: []
     };
   },
   computed: {
@@ -40,10 +43,14 @@ export default {
         local.title.toLowerCase().includes(this.search.toLowerCase())
       );
     },
+    rolValido() {
+      const rol = this.$route.params.rol;
+      return ["admin", "vendedor"].includes(rol);
+    }
   },
   methods: {
     searchLocales() {
-      // Si en el futuro quieres buscar en el backend, haz la petición aquí
+      // Puedes implementar búsqueda avanzada si lo deseas
     },
     fetchLocales() {
       fetch("/api/locales")
@@ -59,17 +66,18 @@ export default {
             state: item.estado,
             zip: item.codigo_postal,
             fotoLocal: item.foto_local,
-            imagenUbicacion: item.imagen_ubicacion,
+            imagenUbicacion: item.imagen_ubicacion
           }));
         })
         .catch((err) => console.error("Error al cargar locales:", err));
-    },
+    }
   },
   mounted() {
     this.fetchLocales();
-  },
+  }
 };
 </script>
+
 
 <style scoped>
 .app-container {
