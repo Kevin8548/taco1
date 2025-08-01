@@ -42,13 +42,13 @@ const routes = [
 
   // Pago con query string
   {
-    path: '/pago',
-    name: 'Pago',
-    component: Pago,
-    props: route => ({
-      order: route.query.order ? JSON.parse(route.query.order) : null
-    })
-  },
+  path: '/pago',
+  name: 'Pago',
+  component: Pago,
+  props: true,
+  meta: { requiresAuth: true } // Puedes agregar also `onlyAdmin: true` si deseas proteger toda la vista
+},
+
 
   // Rutas generales
   { path: '/carrito',     name: 'Carrito',      component: Carrito },

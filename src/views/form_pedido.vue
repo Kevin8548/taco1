@@ -86,7 +86,7 @@ const router     = useRouter()
 const carrito    = useCarritoStore()
 const orderStore = useOrderStore()
 
-// Campos v-model...
+// v-models
 const nombre   = ref('')
 const telefono = ref('')
 const correo   = ref('')
@@ -99,7 +99,7 @@ const calles   = ref('')
 const fecha    = ref('')
 const hora     = ref('')
 
-// **Leemos el id del cliente** desde la URL: /form_pedido/:id
+// obtenemos el id del cliente de la URL
 const userId = Number(route.params.id)
 
 async function onConfirm() {
@@ -112,11 +112,10 @@ async function onConfirm() {
   })
   if (!isConfirmed) return
 
-  // Armamos array de productos y calculamos total
+  // armamos el pedido
   const productos = carrito.items.map(i => ({ id_taco: i.id, cantidad: i.qty }))
-  const total     = carrito.items.reduce((sum,i) => sum + (i.precio||0)*i.qty, 0)
+  const total     = carrito.items.reduce((sum, i) => sum + (i.precio || 0)*i.qty, 0)
 
-  // **Usamos userId** como id_cliente
   const payload = {
     id_cliente:    userId,
     nombre:        nombre.value,
@@ -137,7 +136,7 @@ async function onConfirm() {
   }
 
   try {
-    const res  = await fetch('/api/pedido', {
+    const res = await fetch('/api/pedido', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -147,9 +146,11 @@ async function onConfirm() {
 
     await Swal.fire('¡Éxito!', 'Tu pedido fue enviado.', 'success')
 
-    // Guardar para pago y vaciar carrito
+    // guardamos en Pinia y limpiamos carrito
     orderStore.setOrder({ id: data.id_pedido, name: nombre.value, total })
     carrito.vaciarCarrito()
+
+    // sólo push al nombre de ruta Pago
     router.push({ name: 'Pago' })
   } catch (err) {
     await Swal.fire('Error', err.message, 'error')
@@ -159,10 +160,16 @@ async function onConfirm() {
 
 
 
-
-
-
 <style scoped>
+
+input[type="email"] {
+  padding: 18px 20px;
+  font-size: 16px;
+  border: 1.6px solid #aaa;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+  width: 100%;
+}
 .contenedor {
   max-width: 950px;
   margin: 30px auto;
