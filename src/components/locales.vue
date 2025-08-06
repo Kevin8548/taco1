@@ -18,15 +18,29 @@
 
     <p class="local-description">{{ local.description }}</p>
 
-    <img
-      v-if="ubicacionSrc"
-      :src="ubicacionSrc"
-      alt="Ubicación"
-      class="local-img ubicacion"
-    />
+    <template v-if="ubicacionSrc">
+      <a
+        v-if="ubicacionUrl"
+        :href="ubicacionUrl"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="ubicacion-link"
+      >
+        <img
+          :src="ubicacionSrc"
+          alt="Ubicación del local"
+          class="local-img ubicacion"
+        />
+      </a>
+      <img
+        v-else
+        :src="ubicacionSrc"
+        alt="Ubicación del local"
+        class="local-img ubicacion"
+      />
+    </template>
 
     <div class="buttons">
-      <!-- Solo usuarios con rol válido ven el botón de Editar -->
       <router-link
         v-if="rolValido"
         :to="`/editar-local/${local.id}`"
@@ -34,7 +48,6 @@
         <button>Editar</button>
       </router-link>
 
-      <!-- Comentarios siempre visible -->
       <router-link
         :to="`/locales/${local.id}/comentarios`"
       >
@@ -68,6 +81,9 @@ export default {
         ? b64
         : `data:image/jpeg;base64,${b64}`;
     },
+    ubicacionUrl() {
+      return this.local.urlMap || this.local.url_ubicacion_maps || null;
+    },
     rolValido() {
       const rol = this.$route.params.rol;
       return ["admin", "vendedor"].includes(rol);
@@ -75,74 +91,6 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-.local-card {
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.local-card.orange {
-  background: #fff8e1;
-}
-
-.local-card.yellow {
-  background: #e3f2fd;
-}
-
-.local-img {
-  width: 100%;
-  max-height: 150px;
-  object-fit: cover;
-  border-radius: 4px;
-  margin-bottom: 12px;
-}
-
-.ubicacion {
-  margin-top: 8px;
-}
-
-.local-address {
-  font-size: 0.9rem;
-  font-weight: 500;
-  text-align: center;
-  margin: 8px 0;
-}
-
-.local-description {
-  font-size: 0.85rem;
-  color: #555;
-  text-align: center;
-  margin-bottom: 12px;
-}
-
-.buttons {
-  margin-top: auto;
-}
-
-.buttons a {
-  text-decoration: none; /* Quita subrayado del link */
-}
-
-.buttons button {
-  padding: 6px 12px;
-  background-color: #1976d2;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  text-decoration: none; /* Por si acaso */
-}
-
-.buttons button:hover {
-  background-color: #1565c0;
-}
-</style>
 
 <style scoped>
 .local-card {
@@ -159,6 +107,7 @@ export default {
 .local-card.yellow {
   background-color: #fff59d;
 }
+
 .local-card.orange {
   background-color: #ffb74d;
 }
@@ -167,23 +116,42 @@ export default {
   transform: scale(1.03);
 }
 
-/* Imágenes sin fondo blanco */
 .local-img {
   width: 60%;
+  height: 180px;
   object-fit: cover;
   border-radius: 10px;
-  margin-bottom: 10px;
-  background-color: transparent;
+  display: block;
+  margin-top: -12px; /* más arriba */
+  margin-bottom: 6px;
 }
 
-/* Título */
+.local-img.ubicacion {
+  margin-top: -10px;
+  margin-bottom: 8px;
+}
+
+.ubicacion-link {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.ubicacion-link img {
+  width: 60%;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 10px;
+  margin-top: -10px;
+  margin-bottom: 8px;
+}
+
 .local-card h3 {
-  margin: 8px 0 4px;
+  margin: 6px 0 4px;
   text-align: center;
   font-size: 16px;
 }
 
-/* Dirección centrada */
 .local-address {
   text-align: center;
   font-size: 14px;
@@ -191,24 +159,20 @@ export default {
   max-width: 90%;
 }
 
-/* Descripción centrada */
 .local-description {
   text-align: center;
   font-size: 13px;
   color: #333;
-  margin-top: 4px;
-  margin-bottom: 10px;
+  margin: 4px 0 10px;
   font-style: italic;
 }
 
-/* Botones */
 .buttons {
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 8px;
-  margin-top: 20px;
-  outline: none;
+  margin-top: auto;
 }
 
 .buttons button {
@@ -221,8 +185,6 @@ export default {
   font-weight: 600;
   transition: background-color 0.2s ease;
   font-size: 13px;
-  display: flex;
-  align-items: center;
 }
 
 .buttons button:hover {

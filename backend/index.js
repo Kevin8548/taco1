@@ -866,7 +866,7 @@ app.delete("/api/tacos/:id", async (req, res) => {
   }
 });
 
-// Listar locales
+// 1. Listar locales
 app.get('/api/locales', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM locales ORDER BY id');
@@ -877,78 +877,88 @@ app.get('/api/locales', async (req, res) => {
   }
 });
 
-// Insertar local
-app.post("/api/locales", async (req, res) => {
+// 2. Insertar local
+app.post('/api/locales', async (req, res) => {
   const {
     nombre,
     descripcion,
     calle,
     ciudad,
     codigo_postal,
+    estado,
     entre_calles,
     colonia,
-    fotoLocal,
-    imagenUbicacion,
-    fk_vendedor = 1,
-    estado_provincia_zona,
+    foto_local,
+    imagen_ubicacion,
+    url_ubicacion_maps,
+    fk_vendedor = null,
   } = req.body;
 
-  console.log("📥 BODY recibido en POST:", req.body);
+  console.log('📥 BODY recibido en POST:', req.body);
 
   try {
-    const result = await pool.query(
-      `INSERT INTO locales (
-         nombre_local,
-         descripcion,
-         calle,
-         ciudad,
-         codigo_postal,
-         entre_calles,
-         colonia,
-         foto_local,
-         imagen_ubicacion,
-         fk_vendedor,
-         estado_provincia_zona
-       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
-       RETURNING *`,
-      [
-        nombre,
+    const query = `
+      INSERT INTO locales (
+        nombre_local,
         descripcion,
         calle,
         ciudad,
         codigo_postal,
+        estado,
         entre_calles,
         colonia,
-        fotoLocal,
-        imagenUbicacion,
-        fk_vendedor,
-        estado_provincia_zona,
-      ]
-    );
+        foto_local,
+        imagen_ubicacion,
+        url_ubicacion_maps,
+        fk_vendedor
+      ) VALUES (
+        $1,$2,$3,$4,$5,
+        $6,$7,$8,$9,$10,
+        $11,$12
+      )
+      RETURNING *;
+    `;
+    const values = [
+      nombre,
+      descripcion,
+      calle,
+      ciudad,
+      codigo_postal,
+      estado,
+      entre_calles,
+      colonia,
+      foto_local,
+      imagen_ubicacion,
+      url_ubicacion_maps,
+      fk_vendedor,
+    ];
+
+    const result = await pool.query(query, values);
     res.json({ success: true, data: result.rows[0] });
   } catch (err) {
-    console.error("❌ Error al insertar local:", err);
+    console.error('❌ Error al insertar local:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// Obtener local por ID
-app.get("/api/locales/:id", async (req, res) => {
+// 3. Obtener local por ID
+app.get('/api/locales/:id', async (req, res) => {
   const { id } = req.params;
+
   try {
-    const result = await pool.query("SELECT * FROM locales WHERE id = $1", [id]);
+    const result = await pool.query('SELECT * FROM locales WHERE id = $1', [id]);
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Local no encontrado" });
+      return res.status(404).json({ error: 'Local no encontrado' });
     }
     res.json(result.rows[0]);
   } catch (error) {
-    console.error("❌ Error al obtener local:", error);
-    res.status(500).json({ error: "Error al obtener local." });
+    console.error('❌ Error al obtener local:', error);
+    res.status(500).json({ error: 'Error al obtener local.' });
   }
 });
 
-// Actualizar local
-app.put("/api/locales/:id", async (req, res) => {
+// 4. Actualizar local
+app.put('/api/locales/:id', async (req, res) => {
   const { id } = req.params;
   const {
     nombre,
@@ -956,74 +966,79 @@ app.put("/api/locales/:id", async (req, res) => {
     calle,
     ciudad,
     codigo_postal,
+    estado,
     entre_calles,
     colonia,
-    fotoLocal,
-    imagenUbicacion,
-    fk_vendedor,
-    estado_provincia_zona,
+    foto_local,
+    imagen_ubicacion,
+    url_ubicacion_maps,
+    fk_vendedor = null,
   } = req.body;
 
-  console.log("📥 BODY recibido en PUT:", req.body);
+  console.log('📥 BODY recibido en PUT:', req.body);
 
   try {
-    const result = await pool.query(
-      `UPDATE locales SET
-        nombre_local = $1,
-        descripcion = $2,
-        calle = $3,
-        ciudad = $4,
-        codigo_postal = $5,
-        entre_calles = $6,
-        colonia = $7,
-        foto_local = $8,
-        imagen_ubicacion = $9,
-        fk_vendedor = $10,
-        estado_provincia_zona = $11
-      WHERE id = $12
-      RETURNING *`,
-      [
-        nombre,
-        descripcion,
-        calle,
-        ciudad,
-        codigo_postal,
-        entre_calles,
-        colonia,
-        fotoLocal,
-        imagenUbicacion,
-        fk_vendedor,
-        estado_provincia_zona,
-        id,
-      ]
-    );
+    const query = `
+      UPDATE locales
+      SET
+        nombre_local        = $1,
+        descripcion         = $2,
+        calle               = $3,
+        ciudad              = $4,
+        codigo_postal       = $5,
+        estado              = $6,
+        entre_calles        = $7,
+        colonia             = $8,
+        foto_local          = $9,
+        imagen_ubicacion    = $10,
+        url_ubicacion_maps  = $11,
+        fk_vendedor         = $12
+      WHERE id = $13
+      RETURNING *;
+    `;
+    const values = [
+      nombre,
+      descripcion,
+      calle,
+      ciudad,
+      codigo_postal,
+      estado,
+      entre_calles,
+      colonia,
+      foto_local,
+      imagen_ubicacion,
+      url_ubicacion_maps,
+      fk_vendedor,
+      id,
+    ];
 
+    const result = await pool.query(query, values);
     if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, message: "Local no encontrado" });
+      return res.status(404).json({ success: false, message: 'Local no encontrado' });
     }
-
     res.json({ success: true, local: result.rows[0] });
   } catch (error) {
-    console.error("❌ Error al actualizar local:", error);
-    res.status(500).json({ success: false, error: "Error al actualizar local." });
+    console.error('❌ Error al actualizar local:', error);
+    res.status(500).json({ success: false, error: 'Error al actualizar local.' });
   }
 });
 
-// Eliminar local
-app.delete("/api/locales/:id", async (req, res) => {
+// 5. Eliminar local
+app.delete('/api/locales/:id', async (req, res) => {
   const { id } = req.params;
+
   try {
     const result = await pool.query(
-      "DELETE FROM locales WHERE id = $1 RETURNING *;",
+      'DELETE FROM locales WHERE id = $1 RETURNING *;',
       [id]
     );
     if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, message: "Local no encontrado" });
+      return res.status(404).json({ success: false, message: 'Local no encontrado' });
     }
-    res.json({ success: true, message: "Local eliminado correctamente" });
+    res.json({ success: true, message: 'Local eliminado correctamente' });
   } catch (error) {
-    console.error("Error al eliminar local:", error);
-    res.status(500).json({ success: false, error: "Error al eliminar local" });
+    console.error('❌ Error al eliminar local:', error);
+    res.status(500).json({ success: false, error: 'Error al eliminar local' });
   }
 });
 

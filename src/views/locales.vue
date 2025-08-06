@@ -7,7 +7,6 @@
         <input v-model="search" placeholder="Buscar..." />
         <button @click="searchLocales">Buscar</button>
 
-        <!-- Botón visible solo si el rol en la URL es válido -->
         <router-link v-if="rolValido" to="/registrar_local">
           <button>Registrar Nuevo</button>
         </router-link>
@@ -39,7 +38,7 @@ export default {
   },
   computed: {
     filteredLocales() {
-      return this.locales.filter((local) =>
+      return this.locales.filter(local =>
         local.title.toLowerCase().includes(this.search.toLowerCase())
       );
     },
@@ -54,9 +53,9 @@ export default {
     },
     fetchLocales() {
       fetch("/api/locales")
-        .then((res) => res.json())
-        .then((data) => {
-          this.locales = data.map((item) => ({
+        .then(res => res.json())
+        .then(data => {
+          this.locales = data.map(item => ({
             id: item.id,
             title: item.nombre_local,
             description: item.descripcion,
@@ -65,11 +64,13 @@ export default {
             city: item.ciudad,
             state: item.estado,
             zip: item.codigo_postal,
+            entreCalles: item.entre_calles,
             fotoLocal: item.foto_local,
-            imagenUbicacion: item.imagen_ubicacion
+            imagenUbicacion: item.imagen_ubicacion,
+            urlMap: item.url_map || item.url_ubicacion_maps || null // ✅ agregado
           }));
         })
-        .catch((err) => console.error("Error al cargar locales:", err));
+        .catch(err => console.error("Error al cargar locales:", err));
     }
   },
   mounted() {
@@ -79,12 +80,22 @@ export default {
 </script>
 
 
+
 <style scoped>
 .app-container {
   min-height: 100vh;
   padding: 20px;
   font-family: sans-serif;
 }
+
+.card-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center; /* ✅ centramos las tarjetas */
+  gap: 16px;
+  margin-top: 20px;
+}
+
 
 header {
   display: flex;

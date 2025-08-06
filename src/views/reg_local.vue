@@ -5,7 +5,11 @@
     <div class="grupo">
       <div class="campo">
         <label>Nombre del Local</label>
-        <input type="text" v-model="nombre" placeholder="Ej. Tacos Don Memo" />
+        <input
+          type="text"
+          v-model="nombre"
+          placeholder="Ej. Tacos Don Memo"
+        />
       </div>
       <div class="campo campo-grande">
         <label>Descripción</label>
@@ -25,14 +29,22 @@
       </div>
       <div class="campo">
         <label>Ciudad</label>
-        <input type="text" v-model="ciudad" placeholder="Ej. Ciudad de México" />
+        <input
+          type="text"
+          v-model="ciudad"
+          placeholder="Ej. Ciudad de México"
+        />
       </div>
     </div>
 
     <div class="grupo">
       <div class="campo">
         <label>Código Postal</label>
-        <input type="text" v-model="codigoPostal" placeholder="Ej. 06000" />
+        <input
+          type="text"
+          v-model="codigoPostal"
+          placeholder="Ej. 06000"
+        />
       </div>
       <div class="campo">
         <label>Estado / Provincia / Zona</label>
@@ -41,8 +53,12 @@
     </div>
 
     <div class="campo">
-      <label>Entre calles</label>
-      <input type="text" v-model="entreCalles" placeholder="Ej. Juárez y Madero" />
+      <label>Entre Calles</label>
+      <input
+        type="text"
+        v-model="entreCalles"
+        placeholder="Ej. Juárez y Madero"
+      />
     </div>
 
     <div class="campo">
@@ -50,9 +66,20 @@
       <input type="text" v-model="colonia" placeholder="Ej. Centro" />
     </div>
 
+    <div class="campo">
+      <label>URL Google Maps</label>
+      <input
+        type="url"
+        v-model="mapUrl"
+        placeholder="https://maps.google.com/..."
+      />
+    </div>
+
     <div class="imagenes">
       <div class="imagen-preview">
-        <label for="ubicacionFile" class="input-file-label">🗺️Galería Ubicación</label>
+        <label for="ubicacionFile" class="input-file-label">
+          🗺️ Galería Ubicación
+        </label>
         <input
           id="ubicacionFile"
           type="file"
@@ -66,7 +93,9 @@
       </div>
 
       <div class="imagen-preview">
-        <label for="localFile" class="input-file-label">🖼️Galería Local</label>
+        <label for="localFile" class="input-file-label">
+          🖼️ Galería Local
+        </label>
         <input
           id="localFile"
           type="file"
@@ -81,7 +110,9 @@
     </div>
 
     <div class="acciones">
-      <button class="registrar" @click="showConfirmDialog">Registrar</button>
+      <button class="registrar" @click="showConfirmDialog">
+        Registrar
+      </button>
     </div>
   </div>
 </template>
@@ -94,13 +125,14 @@ export default {
   data() {
     return {
       nombre: "",
+      descripcion: "",
       calle: "",
       ciudad: "",
       codigoPostal: "",
       estado: "",
       entreCalles: "",
       colonia: "",
-      descripcion: "",
+      mapUrl: "",
       ubicacionFile: null,
       ubicacionPreviewUrl: null,
       localFile: null,
@@ -116,7 +148,11 @@ export default {
       } else {
         this.ubicacionFile = null;
         this.ubicacionPreviewUrl = null;
-        Swal.fire("Error", "Selecciona una imagen válida para la ubicación.", "warning");
+        Swal.fire(
+          "Error",
+          "Selecciona una imagen válida para la ubicación.",
+          "warning"
+        );
       }
     },
     onLocalChange(event) {
@@ -130,8 +166,16 @@ export default {
         Swal.fire("Error", "Selecciona una imagen válida para el local.", "warning");
       }
     },
+    fileToBase64(file) {
+      return new Promise((resolve) => {
+        if (!file) return resolve(null);
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.readAsDataURL(file);
+      });
+    },
     async showConfirmDialog() {
-      const confirm = await Swal.fire({
+      const confirmation = await Swal.fire({
         title: "¿Deseas registrar este local?",
         text: "Se guardarán los datos ingresados.",
         icon: "question",
@@ -141,16 +185,15 @@ export default {
         confirmButtonText: "Sí, registrar",
         cancelButtonText: "Cancelar",
       });
-
-      if (!confirm.isConfirmed) return;
+      if (!confirmation.isConfirmed) return;
 
       try {
-        const [fotoLocalBase64, ubicacionBase64] = await Promise.all([
+        const [fotoB64, ubicB64] = await Promise.all([
           this.fileToBase64(this.localFile),
           this.fileToBase64(this.ubicacionFile),
         ]);
 
-        const data = {
+        const payload = {
           nombre: this.nombre,
           descripcion: this.descripcion,
           calle: this.calle,
@@ -159,41 +202,28 @@ export default {
           estado: this.estado,
           entre_calles: this.entreCalles,
           colonia: this.colonia,
-          // ¡aquí pasamos camelCase!
-          fotoLocal: fotoLocalBase64,
-          imagenUbicacion: ubicacionBase64,
-          fk_vendedor: 1,
+          url_ubicacion_maps: this.mapUrl,
+          foto_local: fotoB64,
+          imagen_ubicacion: ubicB64,
         };
 
         const res = await fetch("/api/locales", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data),
+          body: JSON.stringify(payload),
         });
         const result = await res.json();
 
         if (result.success) {
-          Swal.fire(
-            "¡Registrado!",
-            "El local se ha registrado correctamente.",
-            "success"
-          );
+          Swal.fire("¡Registrado!", "El local se ha registrado correctamente.", "success");
           this.resetForm();
         } else {
           throw new Error(result.error || "No se pudo registrar el local.");
         }
-      } catch (error) {
-        console.error("Error al registrar:", error);
-        Swal.fire("Error", error.message, "error");
+      } catch (err) {
+        console.error("Error al registrar:", err);
+        Swal.fire("Error", err.message, "error");
       }
-    },
-    fileToBase64(file) {
-      return new Promise((resolve) => {
-        if (!file) return resolve(null);
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.readAsDataURL(file);
-      });
     },
     resetForm() {
       this.nombre = "";
@@ -204,6 +234,7 @@ export default {
       this.estado = "";
       this.entreCalles = "";
       this.colonia = "";
+      this.mapUrl = "";
       this.ubicacionFile = null;
       this.ubicacionPreviewUrl = null;
       this.localFile = null;

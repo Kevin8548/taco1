@@ -5,7 +5,11 @@
     <div class="grupo">
       <div class="campo">
         <label>Nombre del Local</label>
-        <input type="text" v-model="nombre" placeholder="Ej. Tacos Don Memo" />
+        <input
+          type="text"
+          v-model="nombre"
+          placeholder="Ej. Tacos Don Memo"
+        />
       </div>
       <div class="campo campo-grande">
         <label>Descripción</label>
@@ -25,14 +29,22 @@
       </div>
       <div class="campo">
         <label>Ciudad</label>
-        <input type="text" v-model="ciudad" placeholder="Ej. Ciudad de México" />
+        <input
+          type="text"
+          v-model="ciudad"
+          placeholder="Ej. Ciudad de México"
+        />
       </div>
     </div>
 
     <div class="grupo">
       <div class="campo">
         <label>Código Postal</label>
-        <input type="text" v-model="codigoPostal" placeholder="Ej. 06000" />
+        <input
+          type="text"
+          v-model="codigoPostal"
+          placeholder="Ej. 06000"
+        />
       </div>
       <div class="campo">
         <label>Estado / Provincia / Zona</label>
@@ -41,18 +53,37 @@
     </div>
 
     <div class="campo">
-      <label>Entre calles</label>
-      <input type="text" v-model="entreCalles" placeholder="Ej. Juárez y Madero" />
+      <label>Entre Calles</label>
+      <input
+        type="text"
+        v-model="entreCalles"
+        placeholder="Ej. Juárez y Madero"
+      />
     </div>
 
     <div class="campo">
       <label>Colonia</label>
-      <input type="text" v-model="colonia" placeholder="Ej. Centro" />
+      <input
+        type="text"
+        v-model="colonia"
+        placeholder="Ej. Centro"
+      />
+    </div>
+
+    <div class="campo">
+      <label>URL Google Maps</label>
+      <input
+        type="url"
+        v-model="mapUrl"
+        placeholder="https://maps.google.com/..."
+      />
     </div>
 
     <div class="imagenes">
       <div class="imagen-preview">
-        <label for="ubicacionFile" class="input-file-label">🗺️Galería Ubicación</label>
+        <label for="ubicacionFile" class="input-file-label">
+          🗺️ Galería Ubicación
+        </label>
         <input
           id="ubicacionFile"
           type="file"
@@ -66,7 +97,9 @@
       </div>
 
       <div class="imagen-preview">
-        <label for="localFile" class="input-file-label">🖼️Galería Local</label>
+        <label for="localFile" class="input-file-label">
+          🖼️ Galería Local
+        </label>
         <input
           id="localFile"
           type="file"
@@ -81,8 +114,12 @@
     </div>
 
     <div class="acciones">
-      <button class="editar" @click="showConfirmDialog('editar')">Editar</button>
-      <button class="eliminar" @click="showConfirmDialog('eliminar')">Eliminar</button>
+      <button class="editar" @click="showConfirmDialog('editar')">
+        Editar
+      </button>
+      <button class="eliminar" @click="showConfirmDialog('eliminar')">
+        Eliminar
+      </button>
     </div>
   </div>
 </template>
@@ -104,19 +141,17 @@ const codigoPostal = ref("");
 const estado = ref("");
 const entreCalles = ref("");
 const colonia = ref("");
+const mapUrl = ref("");
 const ubicacionFile = ref(null);
 const localFile = ref(null);
 const ubicacionPreviewUrl = ref(null);
 const localPreviewUrl = ref(null);
 
-// Carga los datos del local al montar
 onMounted(async () => {
   if (!id) {
     Swal.fire("Error", "No se encontró el ID del local.", "error");
-    router.push("/locales");
-    return;
+    return router.push("/locales");
   }
-
   try {
     const res = await fetch(`/api/locales/${id}`);
     if (!res.ok) throw new Error("Error al obtener local");
@@ -130,6 +165,7 @@ onMounted(async () => {
     estado.value = data.estado;
     entreCalles.value = data.entre_calles;
     colonia.value = data.colonia;
+    mapUrl.value = data.url_ubicacion_maps;
     ubicacionPreviewUrl.value = data.imagen_ubicacion;
     localPreviewUrl.value = data.foto_local;
   } catch (e) {
@@ -138,14 +174,13 @@ onMounted(async () => {
   }
 });
 
-// Limpia URLs de preview
 onBeforeUnmount(() => {
   if (ubicacionPreviewUrl.value) URL.revokeObjectURL(ubicacionPreviewUrl.value);
   if (localPreviewUrl.value) URL.revokeObjectURL(localPreviewUrl.value);
 });
 
-function onUbicacionChange(e) {
-  const file = e.target.files[0];
+function onUbicacionChange(event) {
+  const file = event.target.files[0];
   if (file && file.type.startsWith("image/")) {
     if (ubicacionPreviewUrl.value) URL.revokeObjectURL(ubicacionPreviewUrl.value);
     ubicacionFile.value = file;
@@ -153,8 +188,8 @@ function onUbicacionChange(e) {
   }
 }
 
-function onLocalChange(e) {
-  const file = e.target.files[0];
+function onLocalChange(event) {
+  const file = event.target.files[0];
   if (file && file.type.startsWith("image/")) {
     if (localPreviewUrl.value) URL.revokeObjectURL(localPreviewUrl.value);
     localFile.value = file;
@@ -181,12 +216,12 @@ async function guardarCambios() {
   });
   if (!result.isConfirmed) return;
 
-  const [fotoLocalB64, ubicB64] = await Promise.all([
+  const [fotoB64, ubicB64] = await Promise.all([
     fileToBase64(localFile.value),
     fileToBase64(ubicacionFile.value),
   ]);
 
-  const body = {
+  const payload = {
     nombre: nombre.value,
     descripcion: descripcion.value,
     calle: calle.value,
@@ -195,38 +230,37 @@ async function guardarCambios() {
     estado: estado.value,
     entre_calles: entreCalles.value,
     colonia: colonia.value,
-    fotoLocal: fotoLocalB64 || localPreviewUrl.value,
-    imagenUbicacion: ubicB64 || ubicacionPreviewUrl.value,
+    url_ubicacion_maps: mapUrl.value,
+    foto_local: fotoB64 || localPreviewUrl.value,
+    imagen_ubicacion: ubicB64 || ubicacionPreviewUrl.value,
   };
 
   try {
     const res = await fetch(`/api/locales/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      body: JSON.stringify(payload),
     });
-
     if (!res.ok) {
       const err = await res.json();
       throw new Error(err.error || "No se pudo editar.");
     }
-
     Swal.fire("¡Listo!", "El local fue actualizado.", "success");
     router.push("/locales");
-  } catch (error) {
-    Swal.fire("Error", error.message, "error");
+  } catch (err) {
+    Swal.fire("Error", err.message, "error");
   }
 }
 
 async function eliminarLocal() {
-  const result = await Swal.fire({
+  const confirmation = await Swal.fire({
     title: "¿Seguro que quieres eliminar?",
     text: "Esta acción no se puede deshacer.",
     icon: "warning",
     showCancelButton: true,
     confirmButtonText: "Sí, eliminar",
   });
-  if (!result.isConfirmed) return;
+  if (!confirmation.isConfirmed) return;
 
   try {
     const res = await fetch(`/api/locales/${id}`, { method: "DELETE" });
@@ -236,18 +270,14 @@ async function eliminarLocal() {
     }
     Swal.fire("¡Listo!", "El local fue eliminado.", "success");
     router.push("/locales");
-  } catch (error) {
-    Swal.fire("Error", error.message, "error");
+  } catch (err) {
+    Swal.fire("Error", err.message, "error");
   }
 }
 
-// Nuevo método de confirmación
 function showConfirmDialog(tipo) {
-  if (tipo === "editar") {
-    guardarCambios();
-  } else if (tipo === "eliminar") {
-    eliminarLocal();
-  }
+  if (tipo === "editar") guardarCambios();
+  else if (tipo === "eliminar") eliminarLocal();
 }
 </script>
 
