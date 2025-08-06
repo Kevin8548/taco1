@@ -18,7 +18,7 @@ export const useCarritoStore = defineStore('carrito', {
 
   actions: {
     agregarAlCarrito(food) {
-      if (food.qty < 50) return // Evita agregar cantidades menores a 50
+      if (food.qty < 50) return  // Evita agregar cantidades menores a 50
 
       const existe = this.items.find(item => item.id === food.id)
 
@@ -27,21 +27,25 @@ export const useCarritoStore = defineStore('carrito', {
         this.guardarEnLocalStorage()
       }
     },
+
     actualizarCantidad(index, nuevaCantidad) {
       if (nuevaCantidad < 50) return
       this.items[index].qty = nuevaCantidad
       this.guardarEnLocalStorage()
     },
+
     eliminarItem(index) {
       this.items.splice(index, 1)
       this.guardarEnLocalStorage()
     },
-    guardarEnLocalStorage() {
-      localStorage.setItem('carrito_items', JSON.stringify(this.items))
-    },
+
     vaciarCarrito() {
       this.items = []
       this.guardarEnLocalStorage()
+    },
+
+    guardarEnLocalStorage() {
+      localStorage.setItem('carrito_items', JSON.stringify(this.items))
     }
   }
 })

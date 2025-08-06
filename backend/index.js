@@ -835,17 +835,33 @@ app.put("/api/tacos/:id", async (req, res) => {
 // Eliminar taco
 app.delete("/api/tacos/:id", async (req, res) => {
   const { id } = req.params;
+
   try {
+    await pool.query("BEGIN");
+
+    // 🧹 Elimina referencias en pedido_taco que usen ese taco
+    await pool.query("DELETE FROM pedido_taco WHERE fk_taco = $1;", [id]);
+    console.log("🧺 Registros en pedido_taco eliminados para taco ID:", id);
+
+    // 🌮 Elimina el taco
     const result = await pool.query(
       "DELETE FROM taco WHERE id = $1 RETURNING *;",
       [id]
     );
-    if (result.rows.length === 0) {
+
+    if (result.rowCount === 0) {
+      await pool.query("ROLLBACK");
+      console.log("⚠️ Taco no encontrado");
       return res.status(404).json({ success: false, message: "Taco no encontrado" });
     }
+
+    await pool.query("COMMIT");
+    console.log("✅ Taco eliminado:", result.rows[0]);
     res.json({ success: true, message: "Taco eliminado correctamente" });
+
   } catch (error) {
-    console.error("Error al eliminar taco:", error);
+    await pool.query("ROLLBACK");
+    console.error("❌ Error al eliminar taco:", error);
     res.status(500).json({ success: false, error: "Error al eliminar taco" });
   }
 });
@@ -868,14 +884,16 @@ app.post("/api/locales", async (req, res) => {
     descripcion,
     calle,
     ciudad,
-    codigoPostal,
-    estado,
-    entreCalles,
+    codigo_postal,
+    entre_calles,
     colonia,
     fotoLocal,
     imagenUbicacion,
     fk_vendedor = 1,
+    estado_provincia_zona,
   } = req.body;
+
+  console.log("📥 BODY recibido en POST:", req.body);
 
   try {
     const result = await pool.query(
@@ -885,12 +903,12 @@ app.post("/api/locales", async (req, res) => {
          calle,
          ciudad,
          codigo_postal,
-         estado,
          entre_calles,
          colonia,
          foto_local,
          imagen_ubicacion,
-         fk_vendedor
+         fk_vendedor,
+         estado_provincia_zona
        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
        RETURNING *`,
       [
@@ -898,22 +916,21 @@ app.post("/api/locales", async (req, res) => {
         descripcion,
         calle,
         ciudad,
-        codigoPostal,
-        estado,
-        entreCalles,
+        codigo_postal,
+        entre_calles,
         colonia,
         fotoLocal,
         imagenUbicacion,
         fk_vendedor,
+        estado_provincia_zona,
       ]
     );
     res.json({ success: true, data: result.rows[0] });
   } catch (err) {
-    console.error("Error al insertar local:", err);
+    console.error("❌ Error al insertar local:", err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
-
 
 // Obtener local por ID
 app.get("/api/locales/:id", async (req, res) => {
@@ -925,7 +942,7 @@ app.get("/api/locales/:id", async (req, res) => {
     }
     res.json(result.rows[0]);
   } catch (error) {
-    console.error("Error al obtener local:", error);
+    console.error("❌ Error al obtener local:", error);
     res.status(500).json({ error: "Error al obtener local." });
   }
 });
@@ -938,45 +955,45 @@ app.put("/api/locales/:id", async (req, res) => {
     descripcion,
     calle,
     ciudad,
-    codigoPostal,
-    estado,
-    entreCalles,
+    codigo_postal,
+    entre_calles,
     colonia,
     fotoLocal,
     imagenUbicacion,
     fk_vendedor,
+    estado_provincia_zona,
   } = req.body;
+
+  console.log("📥 BODY recibido en PUT:", req.body);
 
   try {
     const result = await pool.query(
-      `
-      UPDATE locales SET
+      `UPDATE locales SET
         nombre_local = $1,
         descripcion = $2,
         calle = $3,
         ciudad = $4,
         codigo_postal = $5,
-        estado = $6,
-        entre_calles = $7,
-        colonia = $8,
-        foto_local = $9,
-        imagen_ubicacion = $10,
-        fk_vendedor = $11
+        entre_calles = $6,
+        colonia = $7,
+        foto_local = $8,
+        imagen_ubicacion = $9,
+        fk_vendedor = $10,
+        estado_provincia_zona = $11
       WHERE id = $12
-      RETURNING *;
-      `,
+      RETURNING *`,
       [
         nombre,
         descripcion,
         calle,
         ciudad,
-        codigoPostal,
-        estado,
-        entreCalles,
+        codigo_postal,
+        entre_calles,
         colonia,
         fotoLocal,
         imagenUbicacion,
         fk_vendedor,
+        estado_provincia_zona,
         id,
       ]
     );
@@ -987,7 +1004,7 @@ app.put("/api/locales/:id", async (req, res) => {
 
     res.json({ success: true, local: result.rows[0] });
   } catch (error) {
-    console.error("Error al actualizar local:", error);
+    console.error("❌ Error al actualizar local:", error);
     res.status(500).json({ success: false, error: "Error al actualizar local." });
   }
 });
@@ -1238,36 +1255,42 @@ app.delete('/api/usuarios/:id', async (req, res) => {
   const { id } = req.params;
 
   try {
-    // Iniciamos transacción
     await pool.query('BEGIN');
 
-    // 1) Borrar todos los pedidos de ese cliente
-    await pool.query('DELETE FROM pedido WHERE cliente = $1;', [id]);
+    console.log('🔍 Intentando eliminar usuario con ID:', id);
 
-    // 2) Borrar el usuario
+    const usuario = await pool.query('SELECT tipo_usuario FROM usuario WHERE id = $1;', [id]);
+
+    if (usuario.rows.length === 0) {
+      await pool.query('ROLLBACK');
+      console.log('⚠️ Usuario no encontrado');
+      return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+    }
+
+    const tipo_usuario = usuario.rows[0].tipo_usuario;
+    console.log('📌 Tipo detectado:', tipo_usuario);
+
+    // 🧹 Elimina pedidos si existen
+    await pool.query('DELETE FROM pedido WHERE fk_cliente = $1;', [id]);
+    console.log('🧺 Pedidos relacionados eliminados (si había)');
+
+    // 🗑️ Elimina el usuario
     const result = await pool.query(
       'DELETE FROM usuario WHERE id = $1 RETURNING *;',
       [id]
     );
 
-    if (result.rows.length === 0) {
-      // Si el usuario no existe, revertimos y devolvemos 404
-      await pool.query('ROLLBACK');
-      return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
-    }
-
-    // Confirmamos todos los cambios
     await pool.query('COMMIT');
-    return res.json({ success: true, message: 'Usuario y pedidos eliminados' });
+    console.log('✅ Usuario eliminado:', result.rows[0]);
+
+    return res.json({ success: true, message: 'Usuario eliminado correctamente' });
 
   } catch (error) {
-    // Si algo sale mal, revertimos la transacción
     await pool.query('ROLLBACK');
-    console.error('Error al eliminar usuario y pedidos:', error);
+    console.error('❌ Error al eliminar usuario:', error);
     return res.status(500).json({ success: false, error: 'Error al eliminar usuario' });
   }
 });
-
 
 
 app.listen(3000, () => {

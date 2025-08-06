@@ -44,11 +44,13 @@
             </td>
             <td>{{ p.estado_envio }}</td>
             <td>{{ p.cliente }}</td>
-            <td>{{ p.vendedor || '–' }}</td>
+            <td>{{ p.vendedor || "–" }}</td>
             <td>{{ p.telefono_cliente }}</td>
             <td>{{ p.fecha_hora }}</td>
-            <td class="ubicacion-cell"><pre>{{ formatUbicacion(p.ubicacion) }}</pre></td>
-            <td>{{ p.total != null ? '$' + p.total.toFixed(2) : '–' }}</td>
+            <td class="ubicacion-cell">
+              <pre>{{ formatUbicacion(p.ubicacion) }}</pre>
+            </td>
+            <td>{{ p.total != null ? "$" + p.total.toFixed(2) : "–" }}</td>
           </tr>
           <tr v-if="!pedidosFiltrados.length && !loading">
             <td colspan="10" class="center">No hay resultados para "{{ busqueda }}".</td>
@@ -60,50 +62,60 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, onMounted, computed } from "vue";
+import { useRoute } from "vue-router";
 
-const route  = useRoute()
-const rol    = route.params.rol
-const userId = route.params.id
+const route = useRoute();
+const rol = route.params.rol;
+const userId = route.params.id;
 
-const pedidos  = ref([])
-const busqueda = ref('')
-const loading  = ref(false)
-const error    = ref(null)
+const pedidos = ref([]);
+const busqueda = ref("");
+const loading = ref(false);
+const error = ref(null);
 
 async function fetchPedidos() {
-  loading.value = true
-  error.value   = null
+  loading.value = true;
+  error.value = null;
   try {
     const ruta = route.params.nombre
       ? `/api/pedidos/full/${rol}/${userId}/${encodeURIComponent(route.params.nombre)}`
-      : `/api/pedidos/full/${rol}/${userId}`
+      : `/api/pedidos/full/${rol}/${userId}`;
 
-    const res = await fetch(ruta)
-    if (!res.ok) throw new Error(`HTTP ${res.status}`)
-    pedidos.value = await res.json()
+    const res = await fetch(ruta);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    pedidos.value = await res.json();
+    console.log("Pedidos cargados:", pedidos.value);
   } catch (e) {
-    error.value = 'Error al cargar pedidos: ' + e.message
+    error.value = "Error al cargar pedidos: " + e.message;
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 function formatUbicacion(u) {
-  return u ? u.replace(/, /g, '\n').replace(/\sCP\s/, '\nCP ') : '–'
+  return u ? u.replace(/, /g, "\n").replace(/\sCP\s/, "\nCP ") : "–";
 }
 
 const pedidosFiltrados = computed(() => {
-  const t = busqueda.value.trim().toLowerCase()
-  if (!t) return pedidos.value
-  return pedidos.value.filter(p =>
-    p.id_pedido.toString().includes(t) ||
-    p.cliente.toLowerCase().includes(t)
-  )
-})
+  const t = busqueda.value.trim().toLowerCase();
+  console.log("Buscando:", t);
+  if (!t) {
+    console.log("Sin filtro, mostrando todos:", pedidos.value.length);
+    return pedidos.value;
+  }
+  const filtrados = pedidos.value.filter((p) => {
+    const idStr = p.id_pedido.toString();
+    const clienteStr = (p.cliente || "").toLowerCase();
+    const match = idStr.includes(t) || clienteStr.includes(t);
+    console.log(`ID: ${idStr}, Cliente: ${clienteStr}, Coincide: ${match}`);
+    return match;
+  });
+  console.log("Filtrados:", filtrados.length);
+  return filtrados;
+});
 
-onMounted(fetchPedidos)
+onMounted(fetchPedidos);
 </script>
 
 <style scoped>
@@ -111,7 +123,7 @@ onMounted(fetchPedidos)
   padding: 1rem;
   background: #fff;
   border-radius: 0.5rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .tabla-header {
@@ -127,7 +139,7 @@ onMounted(fetchPedidos)
   background: white;
   border-radius: 10px;
   padding: 5px 10px;
-  box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
   max-width: 300px;
   flex-grow: 1;
 }
@@ -146,7 +158,8 @@ onMounted(fetchPedidos)
   margin-top: 1rem;
 }
 
-th, td {
+th,
+td {
   padding: 0.75rem 1rem;
   border: 1px solid #cbd5e1;
   vertical-align: top;

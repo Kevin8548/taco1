@@ -127,29 +127,43 @@ const form = reactive({
   foto_perfil: "",
 });
 
-const contrasenaOriginal = ref("");
+const contrasenaOriginal = ref(""); // nueva variable para mantener la contraseña real
+
 const previewUrl = ref(null);
 let objectUrl = null;
 let archivoSeleccionado = null;
 
 onMounted(async () => {
   const id = route.params.id;
+  console.log("ID recibido para editar:", id);
+
   try {
     const res = await fetch(`http://localhost:3000/api/usuarios/${id}`);
     if (!res.ok) throw new Error("Error al obtener datos");
-    const data = await res.json();
 
-    // Rellenar formulario
+    const data = await res.json();
+    console.log("Datos recibidos:", data);
+
     form.nombre = data.nombre || "";
     form.apellidos = data.apellidos || "";
     form.contacto = data.contacto || "";
     form.tipo_usuario = data.tipo_usuario || "";
     form.correo_electronico = data.correo_electronico || "";
-    form.contrasena = "";
-    contrasenaOriginal.value = data.contrasena || "";
+    form.contrasena = ""; // el input queda vacío
+    contrasenaOriginal.value = data.contrasena || ""; // pero se guarda aparte
 
     if (data.direccion) {
-      Object.assign(form.direccion, data.direccion);
+      form.direccion.calle = data.direccion.calle || "";
+      form.direccion.ciudad = data.direccion.ciudad || "";
+      form.direccion.codigo_postal = data.direccion.codigo_postal || "";
+      form.direccion.estado_provincia_zona = data.direccion.estado_provincia_zona || "";
+      form.direccion.entre_calles = data.direccion.entre_calles || "";
+    } else {
+      form.direccion.calle = data.calle || "";
+      form.direccion.ciudad = data.ciudad || "";
+      form.direccion.codigo_postal = data.codigo_postal || "";
+      form.direccion.estado_provincia_zona = data.estado_provincia_zona || "";
+      form.direccion.entre_calles = data.entre_calles || "";
     }
 
     form.foto_perfil = data.foto_perfil || "";
@@ -186,20 +200,23 @@ const convertirArchivoABase64 = (file) => {
     reader.readAsDataURL(file);
   });
 };
-
 const guardarCambios = async () => {
   const confirmacion = await Swal.fire({
     title: "¿Seguro que quieres editar?",
     text: "Estás a punto de modificar los datos.",
     icon: "warning",
     showCancelButton: true,
+    confirmButtonColor: "#3085d6",
+    cancelButtonColor: "#d33",
     confirmButtonText: "Sí, editar",
-    cancelButtonText: "Cancelar",
   });
+
+  // Si el usuario no confirma, se cancela la operación
   if (!confirmacion.isConfirmed) return;
 
   try {
     const id = route.params.id;
+
     let foto = form.foto_perfil;
     if (archivoSeleccionado) {
       foto = await convertirArchivoABase64(archivoSeleccionado);
@@ -219,6 +236,7 @@ const guardarCambios = async () => {
       foto_perfil: foto,
     };
 
+    // ✅ Solo agregamos la contraseña si el usuario escribió algo
     if (form.contrasena.trim()) {
       usuarioActualizado.contrasena = form.contrasena;
     }
@@ -228,6 +246,7 @@ const guardarCambios = async () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(usuarioActualizado),
     });
+
     if (!res.ok) throw new Error("Error al actualizar");
 
     await Swal.fire({
@@ -236,46 +255,38 @@ const guardarCambios = async () => {
       text: "Se han actualizado tus datos",
     });
 
-    // REDIRECCIÓN AL LISTADO DE USUARIOS
-    router.push({ name: "Usuario" });
+    router.push("/inicio_sesion");
   } catch (error) {
     console.error(error);
     Swal.fire("Error", "No se pudo actualizar el usuario.", "error");
   }
 };
 
-const eliminarUsuario = async () => {
-  const { isConfirmed } = await Swal.fire({
+const eliminarUsuario = () => {
+  Swal.fire({
     title: "¿Seguro que quieres eliminar?",
     text: "Esta acción no se puede deshacer",
     icon: "warning",
     showCancelButton: true,
     confirmButtonText: "Sí, eliminar",
     cancelButtonText: "Cancelar",
-  });
-  if (!isConfirmed) return;
+  }).then(async (result) => {
+    if (result.isConfirmed) {
+      try {
+        const id = route.params.id;
+        const res = await fetch(`http://localhost:3000/api/usuarios/${id}`, {
+          method: "DELETE",
+        });
 
-  try {
-    const id = route.params.id;
-    const res = await fetch(`http://localhost:3000/api/usuarios/${id}`, {
-      method: "DELETE",
-    });
-    // parsear respuesta
-    const payload = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error("Error al eliminar");
 
-    if (!res.ok) {
-      console.error("Error backend elimina:", payload);
-      // mostrar mensaje específico o genérico
-      throw new Error(payload.error || payload.message || "Error al eliminar");
+        Swal.fire("Eliminado", "Usuario eliminado correctamente", "success");
+        router.push("/inicio_sesion");
+      } catch (error) {
+        Swal.fire("Error", "No se pudo eliminar el usuario", "error");
+      }
     }
-
-    await Swal.fire("Eliminado", "Usuario eliminado correctamente", "success");
-    router.push({ name: "Usuario" });
-
-  } catch (err) {
-    console.error(err);
-    Swal.fire("Error", err.message, "error");
-  }
+  });
 };
 </script>
 

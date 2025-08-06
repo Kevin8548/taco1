@@ -7,7 +7,7 @@
     <div class="card-grid">
       <FoodCard
         v-for="(item, index) in carrito.items"
-        :key="index"
+        :key="item.id"
         :food="item"
         :index="index"
         :isHighlighted="index % 2 === 1"
@@ -17,7 +17,9 @@
     </div>
 
     <div class="button-container">
-      <button class="pedido" @click="realizarPedido">Realizar pedido</button>
+      <button class="pedido" @click="realizarPedido">
+        Realizar pedido
+      </button>
     </div>
   </div>
 </template>
@@ -50,7 +52,7 @@ const realizarPedido = async () => {
   })
   if (!isConfirmed) return
 
-  // <-- LEEMOS AQUÍ -->
+  // Validamos sesión
   let currentUser = null
   try {
     currentUser = JSON.parse(localStorage.getItem('currentUser'))
@@ -65,10 +67,13 @@ const realizarPedido = async () => {
       title: 'No has iniciado sesión',
       text: 'Debes iniciar sesión antes de realizar un pedido.'
     })
-    return router.push({ name: 'InicioSesion', query: { redirect: '/form_pedido' } })
+    return router.push({
+      name: 'InicioSesion',
+      query: { redirect: '/form_pedido' }
+    })
   }
 
-  // Rediriges al formulario con id de usuario
+  // Redirigimos al formulario
   router.push({
     name: 'FormPedido',
     params: { id: userId }
@@ -76,11 +81,18 @@ const realizarPedido = async () => {
 }
 
 const removeItem = (index) => carrito.eliminarItem(index)
-const updateQty = (index, qty) => {
-  if (qty >= 50) carrito.actualizarCantidad(index, qty)
-  else Swal.fire({ icon: 'info', title: 'Cantidad mínima', text: 'La cantidad mínima es 50 por sabor.' })
-}
 
+const updateQty = (index, qty) => {
+  if (qty >= 50) {
+    carrito.actualizarCantidad(index, qty)
+  } else {
+    Swal.fire({
+      icon: 'info',
+      title: 'Cantidad mínima',
+      text: 'La cantidad mínima es 50 por sabor.'
+    })
+  }
+}
 </script>
 
 
