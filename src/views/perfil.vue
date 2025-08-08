@@ -183,7 +183,11 @@ export default {
   },
   methods: {
     registrarUsuario() {
-      this.$router.push("/reg_usuario");
+     this.$router.push({
+  name: "RegUsuario",
+  params: { rol: this.usuario.tipo_usuario }
+});
+
     },
     edit_usuario() {
       // Navegar con nombre de ruta y param id

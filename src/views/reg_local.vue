@@ -262,6 +262,7 @@ export default {
 }
 
 input[type="text"],
+input[type="url"],
 input[type="file"] {
   padding: 10px;
   border: 1px solid #ccc;

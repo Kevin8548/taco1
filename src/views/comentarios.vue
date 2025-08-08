@@ -1,10 +1,13 @@
 <!-- src/views/ComentariosView.vue -->
 <template>
   <div class="comentarios-container">
-    <h2>Comentarios para "{{ comentarios[0]?.local_nombre }}"</h2>
+    <h2>Comentarios para "{{ localNombre }}"</h2>
 
     <div class="nuevo-comentario">
-      <input v-model="nuevo.texto" placeholder="Escribe tu comentario…" />
+      <input
+        v-model="nuevo.texto"
+        placeholder="Escribe tu comentario…"
+      />
       <div class="estrellas">
         <span
           v-for="i in 5"
@@ -14,11 +17,17 @@
           @click="nuevo.calificacion = i"
         >★</span>
       </div>
-      <button @click="agregarComentario">Agregar comentario</button>
+      <button @click="agregarComentario">
+        Agregar comentario
+      </button>
     </div>
 
     <div class="lista-comentarios">
-      <div v-for="c in comentarios" :key="c.id" class="comentario">
+      <div
+        v-for="c in comentarios"
+        :key="c.id"
+        class="comentario"
+      >
         <p>{{ c.texto }}</p>
         <div class="estrellas">
           <span
@@ -29,16 +38,21 @@
           >★</span>
         </div>
         <button
-          v-if="currentUser.role === 'admin' || c.usuario_id === currentUser.id"
+          v-if="currentUser.role === 'admin'"
           class="eliminar"
           @click="eliminarComentario(c.id)"
         >🗑</button>
       </div>
+      <p v-if="!comentarios.length" class="vacio">
+        No hay comentarios aún.
+      </p>
     </div>
   </div>
 </template>
 
 <script>
+import Swal from 'sweetalert2'
+
 export default {
   name: 'ComentariosView',
   props: {
@@ -46,51 +60,131 @@ export default {
   },
   data() {
     return {
-      nuevo: { texto: '', calificacion: 0 },
+      localNombre: '',
+      nuevo: {
+        texto: '',
+        calificacion: 0
+      },
       comentarios: [],
-      currentUser: JSON.parse(localStorage.getItem('currentUser') || '{}')
+      currentUser: JSON.parse(
+        localStorage.getItem('currentUser') || '{}'
+      )
     }
   },
   methods: {
+    // 1) Intenta traer el nombre del local directamente
+    async fetchLocal() {
+      try {
+        const res = await fetch(`/api/locales/${this.localId}`)
+        if (!res.ok) throw new Error(res.statusText)
+        const local = await res.json()
+        this.localNombre = local.nombre
+      } catch {
+        // Deja localNombre en vacío; se completará desde comentarios
+      }
+    },
+
+    // 2) Trae los comentarios y completa el nombre si falta
     async fetchComentarios() {
-      const res = await fetch(`/api/locales/${this.localId}/comentarios`)
-      if (!res.ok) throw new Error('Error al cargar comentarios')
-      this.comentarios = await res.json()
+      try {
+        const res = await fetch(
+          `/api/locales/${this.localId}/comentarios`
+        )
+        if (!res.ok) throw new Error(res.statusText)
+        const json = await res.json()
+        this.comentarios = json
+
+        // Si no se cargó el nombre del local, lo tomamos del primer comentario
+        if (!this.localNombre && json.length && json[0].local_nombre) {
+          this.localNombre = json[0].local_nombre
+        }
+      } catch (err) {
+        console.error('Error cargando comentarios:', err)
+      }
     },
+
+    // Agrega un nuevo comentario
     async agregarComentario() {
-      if (!this.nuevo.texto.trim()) return alert('Escribe tu comentario.')
-      const res = await fetch(
-        `/api/locales/${this.localId}/comentarios`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(this.nuevo)
+      if (!this.nuevo.texto.trim()) {
+        return Swal.fire(
+          'Atención',
+          'Escribe tu comentario.',
+          'warning'
+        )
+      }
+      try {
+        const res = await fetch(
+          `/api/locales/${this.localId}/comentarios`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(this.nuevo)
+          }
+        )
+        if (!res.ok) {
+          const text = await res.text()
+          throw new Error(text || 'No se pudo enviar comentario')
         }
-      )
-      if (!res.ok) throw new Error('Error al enviar comentario')
-      this.comentarios.unshift(await res.json())
-      this.nuevo.texto = ''
-      this.nuevo.calificacion = 0
+        const comentario = await res.json()
+        // Si el nuevo comentario trae local_nombre, lo usamos
+        if (comentario.local_nombre && !this.localNombre) {
+          this.localNombre = comentario.local_nombre
+        }
+        this.comentarios.unshift(comentario)
+        this.nuevo.texto = ''
+        this.nuevo.calificacion = 0
+      } catch (err) {
+        console.error('Error agregando comentario:', err)
+        Swal.fire('Error', err.message, 'error')
+      }
     },
+
+    // Elimina un comentario (sólo admin)
     async eliminarComentario(id) {
-      const res = await fetch(`/api/comentarios/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-User-Id': this.currentUser.id,
-          'X-User-Role': this.currentUser.role
-        }
+      const confirm = await Swal.fire({
+        title: '¿Eliminar comentario?',
+        text: 'Esta acción no se puede deshacer.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
       })
-      if (!res.ok) throw new Error('Error al eliminar')
-      this.comentarios = this.comentarios.filter(c => c.id !== id)
+      if (!confirm.isConfirmed) return
+
+      try {
+        const res = await fetch(`/api/comentarios/${id}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-User-Id': this.currentUser.id,
+            'X-User-Role': this.currentUser.role
+          }
+        })
+        if (!res.ok) {
+          const text = await res.text()
+          throw new Error(text || 'No se pudo eliminar comentario')
+        }
+        this.comentarios = this.comentarios.filter(
+          c => c.id !== id
+        )
+        Swal.fire(
+          'Eliminado',
+          'El comentario fue eliminado.',
+          'success'
+        )
+      } catch (err) {
+        console.error('Error borrando comentario:', err)
+        Swal.fire('Error', err.message, 'error')
+      }
     }
   },
-  mounted() {
-    this.fetchComentarios()
+  // Al montar, primero nombre, luego comentarios
+  async mounted() {
+    await this.fetchLocal()
+    await this.fetchComentarios()
   }
 }
 </script>
-
 <style scoped>
 .comentarios-container {
   max-width: 600px;

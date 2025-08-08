@@ -120,28 +120,33 @@ app.post("/api/locales/:localId/comentarios", async (req, res) => {
 });
 
 // 🔹 Eliminar comentario por ID
+// src/index.js (o tu archivo principal de rutas)
 app.delete('/api/comentarios/:id', async (req, res) => {
   const { id } = req.params;
-  const userId = Number(req.headers['x-user-id']);
-  const role   = req.headers['x-user-role'];
+  const role   = req.headers['x-user-role'];  // sólo necesitamos el rol
+
+  // 1. Sólo admin
+  if (role !== 'admin') {
+    return res.status(403).json({ error: 'Sin permiso' });
+  }
 
   try {
-    const { rows } = await pool.query(
-      'SELECT usuario_id FROM comentarios WHERE id=$1',
+    // 2. Eliminación directa
+    const result = await pool.query(
+      'DELETE FROM comentarios WHERE id = $1',
       [id]
     );
-    if (!rows.length) return res.status(404).end();
 
-    const ownerId = rows[0].usuario_id;
-    if (role !== 'admin' && userId !== ownerId) {
-      return res.status(403).json({ error: 'Sin permiso' });
+    // 3. Si no encontró nada que borrar
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Comentario no encontrado' });
     }
 
-    await pool.query('DELETE FROM comentarios WHERE id=$1', [id]);
-    res.status(204).end();
+    // 4. Borrado exitoso
+    return res.status(204).end();
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
+    console.error('Error en DELETE /api/comentarios/:id', err);
+    return res.status(500).json({ error: err.message });
   }
 });
 

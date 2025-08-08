@@ -28,7 +28,7 @@
         <label>Tipo de usuario</label>
         <select v-model="form.tipo_usuario">
           <option v-if="rolValido" value="admin">Administrador</option>
-          <option value="vendedor">Empleado</option>
+          <option v-if="rolValido" value="vendedor">Empleado</option>
           <option value="cliente">Cliente</option>
         </select>
       </div>

@@ -53,6 +53,7 @@
         <thead>
           <tr>
             <th>Pedido</th>
+            <th>Cliente</th>
             <th>Vendedor</th>
             <th>Estado</th>
             <th>Acciones</th>
@@ -61,6 +62,7 @@
         <tbody>
           <tr v-for="(a, i) in asignaciones" :key="i">
             <td>#{{ a.pedido.id }}</td>
+            <td>{{ a.pedido.nombre_cliente }}</td>
             <td>{{ a.trabajador }}</td>
             <td>
               <span v-if="a.confirmado">✅ Confirmado</span>
@@ -84,7 +86,7 @@
             </td>
           </tr>
           <tr v-if="!asignaciones.length">
-            <td colspan="4" class="vacio">Sin asignaciones aún.</td>
+            <td colspan="5" class="vacio">Sin asignaciones aún.</td>
           </tr>
         </tbody>
       </table>
@@ -130,9 +132,9 @@ async function cargarVendedores() {
 async function cargarAsignaciones() {
   const data = await fetchJson(`${API}/asignaciones`)
   asignaciones.value = data.map(a => ({
-    pedido:       { id: a.pedido_id, nombre_cliente: a.nombre_cliente },
-    trabajador:   a.trabajador,
-    confirmado:   a.confirmado
+    pedido:     { id: a.pedido_id, nombre_cliente: a.nombre_cliente },
+    trabajador: a.trabajador,
+    confirmado: a.confirmado
   }))
 }
 
@@ -153,7 +155,9 @@ async function girarRuleta() {
   animando.value = true
   setTimeout(async () => {
     const pedido    = pedidos.value[Math.floor(Math.random() * pedidos.value.length)]
-    const trabajador = vendedores.value[Math.floor(Math.random() * vendedores.value.length)]
+    const trabajador = vendedores.value[
+      Math.floor(Math.random() * vendedores.value.length)
+    ]
 
     await fetchJson(
       `${API}/pedidos/asignar/${pedido.id}`,
@@ -163,8 +167,14 @@ async function girarRuleta() {
       }
     )
 
+    // actualizar selección
     seleccion.value = { pedido, trabajador }
-    await Promise.all([cargarPedidos(), cargarAsignaciones()])
+
+    // quitar el pedido asignado de la lista de pendientes
+    pedidos.value = pedidos.value.filter(p => p.id !== pedido.id)
+
+    // recargar asignaciones
+    await cargarAsignaciones()
     animando.value = false
   }, 1400)
 }
@@ -182,7 +192,13 @@ async function confirmar(index) {
   if (!isConfirmed) return
 
   await fetchJson(`${API}/pedidos/confirmar/${pedido.id}`, { method: 'POST' })
-  await Promise.all([cargarPedidos(), cargarAsignaciones()])
+
+  // eliminar también del contenedor de pedidos (por si acaso)
+  pedidos.value = pedidos.value.filter(p => p.id !== pedido.id)
+
+  // recargar asignaciones vigentes
+  await cargarAsignaciones()
+
   Swal.fire('¡Confirmado!', 'Asignación registrada.', 'success')
 }
 
@@ -193,7 +209,6 @@ function reasignar(index) {
   asignaciones.value[index].trabajador = nuevo
 }
 </script>
-
 
 <style scoped>
 .asignador-container {

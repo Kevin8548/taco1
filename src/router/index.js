@@ -76,7 +76,13 @@ const routes = [
     component: EditarUsuario,
     props: true
   },
-  { path: '/reg_usuario',   name: 'RegUsuario',    component: RegUsuario },
+{
+  path: '/reg_usuario/:rol?',
+  name: 'RegUsuario',
+  component: RegUsuario,
+  props: route => ({ rolUsuario: route.params.rol })
+},
+
   { path: '/registro',      name: 'Registro',      component: Registro },
 
   // Locales

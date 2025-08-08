@@ -255,7 +255,7 @@ const guardarCambios = async () => {
       text: "Se han actualizado tus datos",
     });
 
-    router.push("/inicio_sesion");
+    router.push("/usuario");
   } catch (error) {
     console.error(error);
     Swal.fire("Error", "No se pudo actualizar el usuario.", "error");
@@ -281,7 +281,7 @@ const eliminarUsuario = () => {
         if (!res.ok) throw new Error("Error al eliminar");
 
         Swal.fire("Eliminado", "Usuario eliminado correctamente", "success");
-        router.push("/inicio_sesion");
+        router.push("/usuario");
       } catch (error) {
         Swal.fire("Error", "No se pudo eliminar el usuario", "error");
       }
