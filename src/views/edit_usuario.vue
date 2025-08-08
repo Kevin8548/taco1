@@ -5,7 +5,11 @@
     <div class="fila">
       <div class="campo">
         <label>Nombre</label>
-        <input type="text" v-model="form.nombre" placeholder="Escribe tu nombre..." />
+        <input
+          type="text"
+          v-model="form.nombre"
+          placeholder="Escribe tu nombre..."
+        />
       </div>
       <div class="campo">
         <label>Apellidos</label>
@@ -45,7 +49,6 @@
           placeholder="Escribe tu número o correo..."
         />
       </div>
-
       <div class="campo">
         <label>Imagen</label>
         <div class="input-file">
@@ -53,8 +56,8 @@
           <input
             type="file"
             id="imagen"
-            @change="onFileChange"
             accept="image/*"
+            @change="onFileChange"
             class="file-input"
           />
         </div>
@@ -103,193 +106,190 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onBeforeUnmount } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import Swal from "sweetalert2";
+import { ref, reactive, onMounted, onBeforeUnmount } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import Swal from 'sweetalert2'
 
-const route = useRoute();
-const router = useRouter();
+const route = useRoute()
+const router = useRouter()
 
 const form = reactive({
-  nombre: "",
-  apellidos: "",
-  contacto: "",
-  tipo_usuario: "",
-  correo_electronico: "",
-  contrasena: "",
+  nombre: '',
+  apellidos: '',
+  correo_electronico: '',
+  contrasena: '',
+  contacto: '',
+  tipo_usuario: '',
   direccion: {
-    calle: "",
-    ciudad: "",
-    codigo_postal: "",
-    estado_provincia_zona: "",
-    entre_calles: "",
+    calle: '',
+    ciudad: '',
+    codigo_postal: '',
+    estado_provincia_zona: '',
+    entre_calles: ''
   },
-  foto_perfil: "",
-});
+  foto_perfil: '' // aquí guardamos Base64 o URL
+})
 
-const contrasenaOriginal = ref(""); // nueva variable para mantener la contraseña real
+const contrasenaOriginal = ref('')
+const previewUrl = ref(null)
+let objectUrl = null
+let archivoSeleccionado = null
 
-const previewUrl = ref(null);
-let objectUrl = null;
-let archivoSeleccionado = null;
-
-onMounted(async () => {
-  const id = route.params.id;
-  console.log("ID recibido para editar:", id);
-
+// 1) Carga del usuario
+async function loadUsuario() {
+  const id = route.params.id
   try {
-    const res = await fetch(`http://localhost:3000/api/usuarios/${id}`);
-    if (!res.ok) throw new Error("Error al obtener datos");
+    const res = await fetch(`http://localhost:3000/api/usuarios/${id}`)
+    if (!res.ok) throw new Error('No se pudo obtener usuario')
+    const data = await res.json()
 
-    const data = await res.json();
-    console.log("Datos recibidos:", data);
+    form.nombre = data.nombre || ''
+    form.apellidos = data.apellidos || ''
+    form.correo_electronico = data.correo_electronico || ''
+    form.contacto = data.contacto || ''
+    form.tipo_usuario = data.tipo_usuario || ''
 
-    form.nombre = data.nombre || "";
-    form.apellidos = data.apellidos || "";
-    form.contacto = data.contacto || "";
-    form.tipo_usuario = data.tipo_usuario || "";
-    form.correo_electronico = data.correo_electronico || "";
-    form.contrasena = ""; // el input queda vacío
-    contrasenaOriginal.value = data.contrasena || ""; // pero se guarda aparte
+    // Guardamos internamente la contraseña original
+    contrasenaOriginal.value = data.contrasena || ''
+    form.contrasena = '' // dejamos el campo vacío
 
+    // Dirección: puede venir como objeto o campos sueltos
     if (data.direccion) {
-      form.direccion.calle = data.direccion.calle || "";
-      form.direccion.ciudad = data.direccion.ciudad || "";
-      form.direccion.codigo_postal = data.direccion.codigo_postal || "";
-      form.direccion.estado_provincia_zona = data.direccion.estado_provincia_zona || "";
-      form.direccion.entre_calles = data.direccion.entre_calles || "";
+      Object.assign(form.direccion, data.direccion)
     } else {
-      form.direccion.calle = data.calle || "";
-      form.direccion.ciudad = data.ciudad || "";
-      form.direccion.codigo_postal = data.codigo_postal || "";
-      form.direccion.estado_provincia_zona = data.estado_provincia_zona || "";
-      form.direccion.entre_calles = data.entre_calles || "";
+      form.direccion.calle = data.calle || ''
+      form.direccion.ciudad = data.ciudad || ''
+      form.direccion.codigo_postal = data.codigo_postal || ''
+      form.direccion.estado_provincia_zona = data.estado_provincia_zona || ''
+      form.direccion.entre_calles = data.entre_calles || ''
     }
 
-    form.foto_perfil = data.foto_perfil || "";
-    previewUrl.value = data.foto_perfil || null;
-  } catch (error) {
-    console.error(error);
-    Swal.fire("Error", "No se pudo cargar la información del usuario.", "error");
+    // Foto de perfil
+    form.foto_perfil = data.foto_perfil || ''
+    previewUrl.value = data.foto_perfil || null
+  } catch (err) {
+    console.error(err)
+    await Swal.fire('Error', 'No se pudo cargar la información del usuario.', 'error')
+    router.back()
   }
-});
+}
 
-const onFileChange = (event) => {
-  const file = event.target.files[0];
-  if (file && file.type.startsWith("image/")) {
-    if (objectUrl) URL.revokeObjectURL(objectUrl);
-    objectUrl = URL.createObjectURL(file);
-    previewUrl.value = objectUrl;
-    archivoSeleccionado = file;
+onMounted(loadUsuario)
+
+// 2) Manejo de cambio de imagen
+function onFileChange(event) {
+  const file = event.target.files[0]
+  if (file && file.type.startsWith('image/')) {
+    if (objectUrl) URL.revokeObjectURL(objectUrl)
+    objectUrl = URL.createObjectURL(file)
+    previewUrl.value = objectUrl
+    archivoSeleccionado = file
   } else {
-    previewUrl.value = null;
-    archivoSeleccionado = null;
-    Swal.fire("Error", "Por favor selecciona una imagen válida.", "error");
+    archivoSeleccionado = null
+    previewUrl.value = null
+    Swal.fire('Error', 'Por favor selecciona una imagen válida.', 'error')
   }
-};
+}
 
 onBeforeUnmount(() => {
-  if (objectUrl) URL.revokeObjectURL(objectUrl);
-});
+  if (objectUrl) URL.revokeObjectURL(objectUrl)
+})
 
-const convertirArchivoABase64 = (file) => {
+// 3) Conversión de File a Base64
+function convertirArchivoABase64(file) {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject("Error al convertir imagen");
-    reader.readAsDataURL(file);
-  });
-};
-const guardarCambios = async () => {
-  const confirmacion = await Swal.fire({
-    title: "¿Seguro que quieres editar?",
-    text: "Estás a punto de modificar los datos.",
-    icon: "warning",
-    showCancelButton: true,
-    confirmButtonColor: "#3085d6",
-    cancelButtonColor: "#d33",
-    confirmButtonText: "Sí, editar",
-  });
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result)
+    reader.onerror = () => reject('Error al convertir imagen')
+    reader.readAsDataURL(file)
+  })
+}
 
-  // Si el usuario no confirma, se cancela la operación
-  if (!confirmacion.isConfirmed) return;
+// 4) Guardar cambios
+async function guardarCambios() {
+  const { isConfirmed } = await Swal.fire({
+    title: '¿Seguro que quieres editar?',
+    text: 'Se actualizarán los datos del usuario.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Sí, guardar',
+    cancelButtonText: 'Cancelar'
+  })
+  if (!isConfirmed) return
 
   try {
-    const id = route.params.id;
+    const id = route.params.id
 
-    let foto = form.foto_perfil;
+    // Si seleccionaron nueva imagen, conviértela
+    let foto = form.foto_perfil
     if (archivoSeleccionado) {
-      foto = await convertirArchivoABase64(archivoSeleccionado);
+      foto = await convertirArchivoABase64(archivoSeleccionado)
     }
 
-    const usuarioActualizado = {
-      nombre: form.nombre,
-      apellidos: form.apellidos,
-      contacto: form.contacto,
-      tipo_usuario: form.tipo_usuario,
-      correo_electronico: form.correo_electronico,
-      calle: form.direccion.calle,
-      ciudad: form.direccion.ciudad,
-      codigo_postal: form.direccion.codigo_postal,
-      estado_provincia_zona: form.direccion.estado_provincia_zona,
-      entre_calles: form.direccion.entre_calles,
-      foto_perfil: foto,
-    };
+    // Coerción segura del código postal a string
+    const rawCP = form.direccion.codigo_postal
+    const codigo_postal = rawCP != null ? String(rawCP).trim() : ''
 
-    // ✅ Solo agregamos la contraseña si el usuario escribió algo
-    if (form.contrasena.trim()) {
-      usuarioActualizado.contrasena = form.contrasena;
+    // Construimos el payload
+    const payload = {
+      nombre: String(form.nombre).trim(),
+      apellidos: String(form.apellidos).trim(),
+      correo_electronico: String(form.correo_electronico).trim(),
+      contacto: String(form.contacto).trim(),
+      tipo_usuario: form.tipo_usuario,
+      contrasena: form.contrasena.trim()
+        ? form.contrasena.trim()
+        : contrasenaOriginal.value,
+      calle: String(form.direccion.calle).trim(),
+      ciudad: String(form.direccion.ciudad).trim(),
+      codigo_postal,
+      estado_provincia_zona: String(form.direccion.estado_provincia_zona).trim(),
+      entre_calles: String(form.direccion.entre_calles).trim(),
+      foto_perfil: foto
     }
 
     const res = await fetch(`http://localhost:3000/api/usuarios/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(usuarioActualizado),
-    });
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    if (!res.ok) throw new Error('Error al actualizar')
 
-    if (!res.ok) throw new Error("Error al actualizar");
-
-    await Swal.fire({
-      icon: "success",
-      title: "¡Editado!",
-      text: "Se han actualizado tus datos",
-    });
-
-    router.push("/usuario");
-  } catch (error) {
-    console.error(error);
-    Swal.fire("Error", "No se pudo actualizar el usuario.", "error");
+    await Swal.fire('¡Listo!', 'Usuario actualizado correctamente.', 'success')
+    router.push('/usuario')
+  } catch (err) {
+    console.error(err)
+    await Swal.fire('Error', 'No se pudo actualizar el usuario.', 'error')
   }
-};
+}
 
-const eliminarUsuario = () => {
-  Swal.fire({
-    title: "¿Seguro que quieres eliminar?",
-    text: "Esta acción no se puede deshacer",
-    icon: "warning",
+// 5) Eliminar usuario
+async function eliminarUsuario() {
+  const { isConfirmed } = await Swal.fire({
+    title: '¿Eliminar usuario?',
+    text: 'Esta acción no se puede deshacer.',
+    icon: 'warning',
     showCancelButton: true,
-    confirmButtonText: "Sí, eliminar",
-    cancelButtonText: "Cancelar",
-  }).then(async (result) => {
-    if (result.isConfirmed) {
-      try {
-        const id = route.params.id;
-        const res = await fetch(`http://localhost:3000/api/usuarios/${id}`, {
-          method: "DELETE",
-        });
+    confirmButtonText: 'Sí, eliminar',
+    cancelButtonText: 'Cancelar'
+  })
+  if (!isConfirmed) return
 
-        if (!res.ok) throw new Error("Error al eliminar");
+  try {
+    const id = route.params.id
+    const res = await fetch(`http://localhost:3000/api/usuarios/${id}`, {
+      method: 'DELETE'
+    })
+    if (!res.ok) throw new Error('Error al eliminar')
 
-        Swal.fire("Eliminado", "Usuario eliminado correctamente", "success");
-        router.push("/usuario");
-      } catch (error) {
-        Swal.fire("Error", "No se pudo eliminar el usuario", "error");
-      }
-    }
-  });
-};
+    await Swal.fire('Eliminado', 'Usuario eliminado correctamente.', 'success')
+    router.push('/usuario')
+  } catch (err) {
+    console.error(err)
+    await Swal.fire('Error', 'No se pudo eliminar el usuario.', 'error')
+  }
+}
 </script>
-
 <style scoped>
 .input-file input[type="file"] {
   display: none;

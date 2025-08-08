@@ -1,16 +1,11 @@
 <template>
   <div class="pago-wrapper">
-    <!-- Loader mientras se carga -->
-    <div v-if="loading" class="loader">
-      Cargando…
-    </div>
+    <div v-if="loading" class="loader">Cargando…</div>
 
-    <!-- Mensaje de error si no hay pedido -->
     <div v-else-if="!hasOrder" class="no-order">
       No se encontró ningún pedido.
     </div>
 
-    <!-- Detalles del pedido -->
     <div v-if="hasOrder" class="pago-contenedor">
       <h1>Comprobante de pedido</h1>
       <p><strong>Cliente:</strong> {{ detalle.nombre_cliente }}</p>
@@ -30,7 +25,6 @@
       </div>
     </div>
 
-    <!-- Siempre muestra la sección de cuenta bancaria -->
     <div class="pago-contenedor pago-banco">
       <h2>Pagar a la cuenta</h2>
 
@@ -79,7 +73,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watchEffect } from 'vue'
+import { ref, reactive, computed, watchEffect, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useOrderStore } from '../stores/orderStore'
 import Swal from 'sweetalert2'
@@ -87,10 +81,7 @@ import Swal from 'sweetalert2'
 const router = useRouter()
 const orderStore = useOrderStore()
 
-// Estado de carga
 const loading = ref(true)
-
-// Datos del pedido
 const sabores = ref([])
 const detalle = ref({
   nombre_cliente: '',
@@ -99,22 +90,20 @@ const detalle = ref({
   total: 0
 })
 
-// Cuenta bancaria
+// datos bancarios
 const bankAccount = reactive({
-  titular: 'Taquería El Buen Taco',
-  banco: 'Banco Ficticio',
-  numero: '1234 5678 9012 3456',
-  clabe: '001234567890123456'
+  titular: '',
+  banco: '',
+  numero: '',
+  clabe: ''
 })
 const bankAccountDraft = reactive({ ...bankAccount })
 const isEditing = ref(false)
 
-// Usuario
 const rawUser = localStorage.getItem('currentUser')
 const user = ref(rawUser ? JSON.parse(rawUser) : null)
 const isAdmin = computed(() => user.value?.role === 'admin')
 
-// Formateo de moneda
 const formatCurrency = value =>
   new Intl.NumberFormat('es-MX', {
     style: 'currency',
@@ -122,10 +111,22 @@ const formatCurrency = value =>
     minimumFractionDigits: 2
   }).format(value)
 
-// Comprueba existencia de orden
 const hasOrder = computed(() => !!orderStore.order?.id)
 
-// Observador: carga datos del pedido
+// 1) Cargar siempre datos de cuenta bancaria
+async function loadBankAccount() {
+  try {
+    const res = await fetch('http://localhost:3000/api/banco')
+    if (!res.ok) throw new Error('No se pudo cargar cuenta bancaria')
+    const data = await res.json()
+    Object.assign(bankAccount, data)
+  } catch (err) {
+    console.error(err)
+    await Swal.fire('Error', 'No se pudo cargar datos de cuenta bancaria', 'error')
+  }
+}
+
+// 2) Cargar pedido y sabores solo si existe order.id
 watchEffect(async () => {
   if (!orderStore.order?.id) {
     loading.value = false
@@ -138,7 +139,7 @@ watchEffect(async () => {
       fetch(`http://localhost:3000/api/pedidos/${id}/sabores`),
       fetch(`http://localhost:3000/api/pedidos/${id}`)
     ])
-    if (!resSab.ok || !resCab.ok) throw new Error('Error en fetch')
+    if (!resSab.ok || !resCab.ok) throw new Error('Error en fetch pedido')
 
     sabores.value = await resSab.json()
     detalle.value = await resCab.json()
@@ -151,21 +152,37 @@ watchEffect(async () => {
   }
 })
 
-// Edición de cuenta bancaria
+// Montar: cargo cuenta bancaria siempre
+onMounted(() => {
+  loadBankAccount()
+})
+
 function startEdit() {
   Object.assign(bankAccountDraft, bankAccount)
   isEditing.value = true
 }
-function saveEdit() {
-  Object.assign(bankAccount, bankAccountDraft)
-  isEditing.value = false
-  Swal.fire('Listo', 'Datos de cuenta actualizados', 'success')
+
+async function saveEdit() {
+  try {
+    const res = await fetch('http://localhost:3000/api/banco', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(bankAccountDraft)
+    })
+    if (!res.ok) throw new Error('Error al guardar')
+    Object.assign(bankAccount, bankAccountDraft)
+    isEditing.value = false
+    await Swal.fire('Listo', 'Datos de cuenta actualizados', 'success')
+  } catch (err) {
+    console.error(err)
+    await Swal.fire('Error', 'No se pudo guardar los datos', 'error')
+  }
 }
+
 function cancelEdit() {
   isEditing.value = false
 }
 
-// Confirmar pago
 async function sendComprobante() {
   await Swal.fire(
     '¡Listo!',

@@ -31,6 +31,7 @@ app.get("/api/test-db", async (req, res) => {
   }
 });
 
+
 // GET contenido completo de inicio
 app.get("/api/contenido-inicio", async (req, res) => {
   try {
@@ -1311,6 +1312,49 @@ app.delete('/api/usuarios/:id', async (req, res) => {
     return res.status(500).json({ success: false, error: 'Error al eliminar usuario' });
   }
 });
+
+// —————————————————————————————————————————————————
+//   CUENTA BANCARIA
+// —————————————————————————————————————————————————
+
+// Obtener datos de cuenta bancaria
+app.get("/api/banco", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * FROM cuenta_bancaria LIMIT 1");
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "No hay datos bancarios" });
+    }
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("Error al obtener datos bancarios:", err);
+    res.status(500).json({ error: "Error al obtener datos bancarios" });
+  }
+});
+
+// Actualizar datos bancarios (admin)
+app.put("/api/banco", async (req, res) => {
+  try {
+    const { titular, banco, numero, clabe } = req.body;
+    if (!titular || !banco || !numero || !clabe) {
+      return res.status(400).json({ error: "Todos los campos son obligatorios" });
+    }
+
+    await pool.query(
+      `UPDATE cuenta_bancaria
+         SET titular = $1, banco = $2, numero = $3, clabe = $4`,
+      [titular, banco, numero, clabe]
+    );
+
+    res.json({ message: "Datos bancarios actualizados" });
+  } catch (err) {
+    console.error("Error al actualizar datos bancarios:", err);
+    res.status(500).json({ error: "Error al actualizar datos bancarios" });
+  }
+});
+
+
+
+
 
 
 app.listen(3000, () => {

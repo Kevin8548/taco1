@@ -10,7 +10,11 @@
       </div>
       <div class="campo">
         <label>Apellidos</label>
-        <input v-model="form.apellidos" type="text" placeholder="Ej. Pérez García" />
+        <input
+          v-model="form.apellidos"
+          type="text"
+          placeholder="Ej. Pérez García"
+        />
       </div>
     </div>
 
@@ -38,11 +42,19 @@
     <div class="grupo">
       <div class="campo">
         <label>Correo electrónico</label>
-        <input v-model="form.correo_electronico" type="email" placeholder="Ej. usuario@ejemplo.com" />
+        <input
+          v-model="form.correo_electronico"
+          type="email"
+          placeholder="Ej. usuario@ejemplo.com"
+        />
       </div>
       <div class="campo">
         <label>Contraseña</label>
-        <input v-model="form.contrasena" type="password" placeholder="Ingrese una contraseña segura" />
+        <input
+          v-model="form.contrasena"
+          type="password"
+          placeholder="Ingrese una contraseña segura"
+        />
       </div>
     </div>
 
@@ -51,28 +63,48 @@
     <div class="grupo">
       <div class="campo">
         <label>Calle</label>
-        <input v-model="form.direccion.calle" type="text" placeholder="Ej. Av. Reforma" />
+        <input
+          v-model="form.direccion.calle"
+          type="text"
+          placeholder="Ej. Av. Reforma"
+        />
       </div>
       <div class="campo">
         <label>Ciudad</label>
-        <input v-model="form.direccion.ciudad" type="text" placeholder="Ej. Ciudad de México" />
+        <input
+          v-model="form.direccion.ciudad"
+          type="text"
+          placeholder="Ej. Ciudad de México"
+        />
       </div>
     </div>
 
     <div class="grupo">
       <div class="campo">
         <label>Código postal</label>
-        <input v-model="form.direccion.codigo_postal" type="text" placeholder="Ej. 06000" />
+        <input
+          v-model="form.direccion.codigo_postal"
+          type="text"
+          placeholder="Ej. 06000"
+        />
       </div>
       <div class="campo">
         <label>Estado / Provincia / Zona</label>
-        <input v-model="form.direccion.estado_provincia_zona" type="text" placeholder="Ej. CDMX" />
+        <input
+          v-model="form.direccion.estado_provincia_zona"
+          type="text"
+          placeholder="Ej. CDMX"
+        />
       </div>
     </div>
 
     <div class="campo">
       <label>Entre calles</label>
-      <input v-model="form.direccion.entre_calles" type="text" placeholder="Ej. Juárez y Madero" />
+      <input
+        v-model="form.direccion.entre_calles"
+        type="text"
+        placeholder="Ej. Juárez y Madero"
+      />
     </div>
 
     <!-- Imagen de perfil -->
@@ -95,7 +127,9 @@
 
     <!-- Botón -->
     <div class="acciones">
-      <button class="registrar" @click="registrarUsuario">Registrar</button>
+      <button class="registrar" @click="registrarUsuario">
+        Registrar
+      </button>
     </div>
   </div>
 </template>
@@ -104,25 +138,26 @@
 import Swal from "sweetalert2";
 
 export default {
-  props: {
-  rolUsuario: {
-    type: String,
-    default: null
-  }
-},
-computed: {
-  rolValido() {
-    return this.rolUsuario === "admin";
-  }
-},
   name: "RegistroUsuario",
+  props: {
+    rolUsuario: {
+      type: String,
+      default: null
+    }
+  },
+  computed: {
+    // Solo muestra roles extra si el usuario actual es admin
+    rolValido() {
+      return this.rolUsuario === "admin";
+    }
+  },
   data() {
     return {
       form: {
         nombre: "",
         apellidos: "",
         contacto: "",
-        tipo_usuario: "",
+        tipo_usuario: "cliente",
         correo_electronico: "",
         contrasena: "",
         direccion: {
@@ -130,82 +165,109 @@ computed: {
           ciudad: "",
           codigo_postal: "",
           estado_provincia_zona: "",
-          entre_calles: "",
+          entre_calles: ""
         },
-        foto_perfil: null,
+        foto_perfil: null
       },
       usuarioPreviewUrl: null,
+      objectUrl: null
     };
-  },
-  computed: {
-    rolValido() {
-      const rol = this.$route.params.rol;
-      return rol === "admin";
-    },
   },
   methods: {
     onUsuarioImageChange(event) {
       const file = event.target.files[0];
       if (file && file.type.startsWith("image/")) {
+        // Revoca URL previa y genera nueva
+        if (this.objectUrl) URL.revokeObjectURL(this.objectUrl);
+        this.objectUrl = URL.createObjectURL(file);
+        this.usuarioPreviewUrl = this.objectUrl;
         this.form.foto_perfil = file;
-        this.usuarioPreviewUrl = URL.createObjectURL(file);
       } else {
+        this.usuarioPreviewUrl = null;
         this.form.foto_perfil = null;
-        Swal.fire("Imagen inválida", "Selecciona una imagen válida.", "warning");
+        Swal.fire(
+          "Imagen inválida",
+          "Selecciona una imagen de tipo JPG, PNG o GIF.",
+          "warning"
+        );
       }
     },
-    registrarUsuario() {
-      Swal.fire({
+
+    convertirArchivoABase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject("Error al convertir imagen");
+        reader.readAsDataURL(file);
+      });
+    },
+
+    async registrarUsuario() {
+      const { isConfirmed } = await Swal.fire({
         title: "¿Desea registrar este usuario?",
         text: "Se guardará el nuevo usuario en el sistema.",
         icon: "warning",
         showCancelButton: true,
         confirmButtonText: "¡Sí, registrar!",
-        cancelButtonText: "Cancelar",
-      }).then((result) => {
-        if (result.isConfirmed) {
-          const payload = {
-            nombre: this.form.nombre,
-            apellidos: this.form.apellidos,
-            contacto: this.form.contacto,
-            tipo_usuario: this.form.tipo_usuario,
-            correo_electronico: this.form.correo_electronico,
-            contrasena: this.form.contrasena,
-            calle: this.form.direccion.calle,
-            ciudad: this.form.direccion.ciudad,
-            codigo_postal: parseInt(this.form.direccion.codigo_postal) || null,
-            estado_provincia_zona: this.form.direccion.estado_provincia_zona,
-            entre_calles: this.form.direccion.entre_calles,
-            foto_perfil: this.form.foto_perfil,
-          };
-
-          fetch("http://localhost:3000/api/usuarios", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          })
-            .then((res) => res.json())
-            .then((data) => {
-              if (data.success) {
-                Swal.fire("¡Registrado!", "Usuario creado correctamente.", "success");
-                this.resetForm();
-              } else {
-                throw new Error("No se pudo registrar.");
-              }
-            })
-            .catch((err) => {
-              console.error(err);
-              Swal.fire("Error", "Hubo un problema al registrar el usuario.", "error");
-            });
-        }
+        cancelButtonText: "Cancelar"
       });
+      if (!isConfirmed) return;
+
+      try {
+        // Convierte imagen a Base64 si existe
+        let fotoBase64 = null;
+        if (this.form.foto_perfil) {
+          fotoBase64 = await this.convertirArchivoABase64(
+            this.form.foto_perfil
+          );
+        }
+
+        // Prepara payload con cadenas limpias
+        const payload = {
+          nombre: this.form.nombre.trim(),
+          apellidos: this.form.apellidos.trim(),
+          contacto: this.form.contacto.trim(),
+          tipo_usuario: this.form.tipo_usuario,
+          correo_electronico: this.form.correo_electronico.trim(),
+          contrasena: this.form.contrasena.trim(),
+          calle: this.form.direccion.calle.trim(),
+          ciudad: this.form.direccion.ciudad.trim(),
+          codigo_postal: this.form.direccion.codigo_postal.trim(),
+          estado_provincia_zona: this.form.direccion.estado_provincia_zona.trim(),
+          entre_calles: this.form.direccion.entre_calles.trim(),
+          foto_perfil: fotoBase64
+        };
+
+        const res = await fetch("http://localhost:3000/api/usuarios", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error("Error al registrar usuario");
+
+        await Swal.fire(
+          "¡Registrado!",
+          "Usuario creado correctamente.",
+          "success"
+        );
+        this.resetForm();
+      } catch (err) {
+        console.error(err);
+        Swal.fire(
+          "Error",
+          "Hubo un problema al registrar el usuario.",
+          "error"
+        );
+      }
     },
+
     resetForm() {
+      // Restablece valores iniciales
       this.form = {
         nombre: "",
         apellidos: "",
         contacto: "",
-        tipo_usuario: "",
+        tipo_usuario: "cliente",
         correo_electronico: "",
         contrasena: "",
         direccion: {
@@ -213,17 +275,18 @@ computed: {
           ciudad: "",
           codigo_postal: "",
           estado_provincia_zona: "",
-          entre_calles: "",
+          entre_calles: ""
         },
-        foto_perfil: null,
+        foto_perfil: null
       };
-      if (this.usuarioPreviewUrl) URL.revokeObjectURL(this.usuarioPreviewUrl);
+      if (this.objectUrl) URL.revokeObjectURL(this.objectUrl);
       this.usuarioPreviewUrl = null;
-    },
+      this.objectUrl = null;
+    }
   },
   beforeUnmount() {
-    if (this.usuarioPreviewUrl) URL.revokeObjectURL(this.usuarioPreviewUrl);
-  },
+    if (this.objectUrl) URL.revokeObjectURL(this.objectUrl);
+  }
 };
 </script>
 
